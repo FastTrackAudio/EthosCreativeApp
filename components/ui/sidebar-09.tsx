@@ -1,49 +1,48 @@
 "use client";
 
-import * as React from "react";
 import {
-  Command,
+  Activity,
+  Archive,
+  ArrowRight,
+  BadgeCheck,
+  BarChart,
+  Bell,
   BookOpen,
   Briefcase,
-  MessageSquare,
-  User,
-  Rocket,
-  Users,
-  PhoneCall,
-  LineChart,
-  FileQuestion,
-  Zap,
-  Archive,
+  Calendar,
+  ChevronsUpDown,
   Clock,
+  Command,
+  Compass,
+  CreditCard,
+  Edit,
+  FileQuestion,
+  FileText,
   Folder,
   Inbox,
-  Send,
-  FileText,
-  Edit,
-  Settings,
-  Activity,
-  Compass,
+  LineChart,
+  ListChecks,
+  LogOut,
+  MessageSquare,
+  PhoneCall,
+  PlusCircle,
+  Rocket,
   Search,
-  UserCheck,
-  UserPlus,
-  Calendar,
+  Send,
+  Settings,
+  ShieldAlert,
+  Sparkles,
   Star,
   Target,
   TrendingUp,
-  BarChart,
-  ArrowRight,
-  ChevronDown,
-  PlusCircle,
-  ListChecks,
-  ChevronsUpDown,
-  Sparkles,
-  BadgeCheck,
-  CreditCard,
-  Bell,
-  LogOut,
-  ShieldAlert,
+  User,
+  UserCheck,
+  UserPlus,
+  Users,
+  Zap,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
+import * as React from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -68,19 +67,9 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import Link from "next/link";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import { Separator } from "@/components/ui/separator";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import type { KindeUser } from "@kinde-oss/kinde-auth-nextjs/dist/types";
 import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components";
+import type { KindeUser } from "@kinde-oss/kinde-auth-nextjs/dist/types";
+import Link from "next/link";
 
 // This is sample data
 const data = {

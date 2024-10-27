@@ -1,8 +1,8 @@
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import prisma from "@/app/utils/db";
 import { notFound } from "next/navigation";
-import { ConceptList } from "./ConceptList";
-import { CreateConceptForm } from "./CreateConceptForm";
+import { ConceptList } from "../../../../../../features/courses/concepts/ConceptList";
+import { CreateConceptForm } from "../../../../../../features/courses/concepts/CreateConceptForm";
 import Link from "next/link";
 
 async function getSection(sectionId: string, userId: string) {

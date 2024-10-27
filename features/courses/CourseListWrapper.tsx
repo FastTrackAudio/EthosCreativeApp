@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { CourseList } from "../../../features/courses/CourseList";
+import { CourseList } from "./CourseList";
 
 type Course = {
   id: string;

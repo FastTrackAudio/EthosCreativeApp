@@ -1,3 +1,63 @@
 {
-  "extends": ["next/core-web-vitals", "next/typescript"]
+  "extends": ["next/core-web-vitals", "next/typescript"],
+  "plugins": ["boundaries"],
+  "settings": {
+    "boundaries/include": ["**/*"],
+    "boundaries/elements": [
+      {
+        "type": "shared",
+        "pattern": [
+          "lib/**/*",
+          "api/**/*",
+          "database/**/*",
+          "components/**/*",
+          "utils/**/*"
+        ]
+      },
+      {
+        "type": "features",
+        "pattern": "features/**/*",
+        "capture": ["featureName"]
+      },
+      {
+        "type": "app",
+        "pattern": "app/**/*"
+      },
+      {
+        "type": "root",
+        "pattern": ["*", "middleware.ts"]
+      }
+    ]
+  },
+  "rules": {
+    "boundaries/element-types": [
+      "error",
+      {
+        "default": "disallow",
+        "rules": [
+          {
+            "from": ["shared"],
+            "allow": ["shared", ["features", { "featureName": "dashboard" }]]
+          },
+          {
+            "from": ["features"],
+            "allow": [
+              "shared",
+              ["features", { "featureName": "${from.featureName}" }]
+            ]
+          },
+          {
+            "from": ["app"],
+            "allow": ["shared", "features"]
+          },
+          {
+            "from": ["root"],
+            "allow": ["shared", "features", "app", "root"]
+          }
+        ]
+      }
+    ],
+    "boundaries/no-unknown": "error",
+    "boundaries/no-unknown-files": "error"
+  }
 }

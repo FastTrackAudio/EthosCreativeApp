@@ -2,7 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getAdminCourses } from "./page.server";
-import { CourseListWrapper } from "@/app/dashboard/my-courses/CourseListWrapper";
+import { CourseListWrapper } from "@/features/courses/CourseListWrapper";
 
 export default async function ManageCourses() {
   const initialCourses = await getAdminCourses();

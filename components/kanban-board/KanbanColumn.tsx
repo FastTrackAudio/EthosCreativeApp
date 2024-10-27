@@ -2,7 +2,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { KanbanCard } from "./KanbanCard";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { AddConceptModal } from "./AddConceptModal";
+import { AddConceptModal } from "../../features/courses/concepts/AddConceptModal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 type Section = {

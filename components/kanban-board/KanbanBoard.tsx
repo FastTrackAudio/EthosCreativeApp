@@ -18,9 +18,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { AddSectionModal } from "./AddSectionModal";
-import { AddConceptModal } from "./AddConceptModal";
-import { EditSectionForm } from "./EditSectionForm";
+import { AddSectionModal } from "../../features/courses/sections/AddSectionModal";
+import { AddConceptModal } from "../../features/courses/concepts/AddConceptModal";
+import { EditSectionForm } from "../../features/courses/sections/EditSectionForm";
 import {
   AlertDialog,
   AlertDialogAction,

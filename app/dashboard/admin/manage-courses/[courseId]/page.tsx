@@ -1,7 +1,7 @@
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import prisma from "@/app/utils/db";
 import { notFound } from "next/navigation";
-import { KanbanBoard } from "./KanbanBoard";
+import { KanbanBoard } from "../../../../../components/kanban-board/KanbanBoard";
 
 async function getCourse(courseId: string, userId: string) {
   const course = await prisma.course.findUnique({

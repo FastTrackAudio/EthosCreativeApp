@@ -2,7 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getUserCourses } from "./page.server";
-import { CourseListWrapper } from "./CourseListWrapper";
+import { CourseListWrapper } from "../../../features/courses/CourseListWrapper";
 
 // This is a Server Component
 export default async function MyCourses() {

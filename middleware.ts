@@ -1,10 +1,11 @@
 import { withAuth } from "@kinde-oss/kinde-auth-nextjs/middleware";
 
 export default withAuth({
-  loginPage: "/api/auth/login",
-  isReturnToCurrentPage: true,
+  // Specify the pages that don't require authentication
+  publicRoutes: ["/", "/api/auth/login", "/api/auth/register"],
 });
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };
+

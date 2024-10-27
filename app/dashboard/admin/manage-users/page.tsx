@@ -1,7 +1,7 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import ManageUsers from "../components/manageUsers";
+import ManageUsers from "../../../../features/admin/manageUsers";
 
 const queryClient = new QueryClient();
 

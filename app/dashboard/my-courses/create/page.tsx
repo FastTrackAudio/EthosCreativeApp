@@ -1,5 +1,5 @@
 import React from "react";
-import { CreateCourseForm } from "../CreateCourseForm";
+import { CreateCourseForm } from "../../../../features/courses/CreateCourseForm";
 
 export default function CreateCoursePage() {
   return (
