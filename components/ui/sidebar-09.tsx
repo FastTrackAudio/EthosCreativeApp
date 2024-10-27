@@ -410,6 +410,11 @@ const secondaryNavItems: SecondaryNavItems = {
       icon: Users,
       url: "/dashboard/admin/manage-users",
     },
+    {
+      title: "Manage Courses",
+      icon: BookOpen,
+      url: "/dashboard/admin/manage-courses",
+    }, // Add this line
     { title: "Quizzes", icon: FileQuestion, url: "/dashboard/admin/quizzes" },
     { title: "Analytics", icon: BarChart, url: "/dashboard/admin/analytics" },
   ],
