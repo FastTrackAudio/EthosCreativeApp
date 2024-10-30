@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
-import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
-import prisma from "@/app/utils/db";
+import { NextResponse } from "next/server"
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server"
+import prisma from "@/app/utils/db"
 
 export async function POST(
   req: Request,
@@ -8,14 +8,14 @@ export async function POST(
     params,
   }: { params: { courseId: string; sectionId: string; conceptId: string } }
 ) {
-  const { getUser } = getKindeServerSession();
-  const user = await getUser();
+  const { getUser } = getKindeServerSession()
+  const user = await getUser()
 
   if (!user || !user.id) {
-    return new Response("Unauthorized", { status: 401 });
+    return new Response("Unauthorized", { status: 401 })
   }
 
-  const { content } = await req.json();
+  const { content } = await req.json()
 
   try {
     const updatedConcept = await prisma.concept.update({
@@ -32,14 +32,14 @@ export async function POST(
       data: {
         content,
       },
-    });
+    })
 
-    return NextResponse.json(updatedConcept);
+    return NextResponse.json(updatedConcept)
   } catch (error) {
-    console.error("Failed to update concept:", error);
+    console.error("Failed to update concept:", error)
     return NextResponse.json(
       { error: "Failed to update concept" },
       { status: 500 }
-    );
+    )
   }
 }

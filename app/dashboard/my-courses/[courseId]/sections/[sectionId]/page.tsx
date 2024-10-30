@@ -1,9 +1,9 @@
-import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
-import prisma from "@/app/utils/db";
-import { notFound } from "next/navigation";
-import { ConceptList } from "../../../../../../features/courses/concepts/ConceptList";
-import { CreateConceptForm } from "../../../../../../features/courses/concepts/CreateConceptForm";
-import Link from "next/link";
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server"
+import prisma from "@/app/utils/db"
+import { notFound } from "next/navigation"
+import { ConceptList } from "../../../../../../features/courses/concepts/ConceptList"
+import { CreateConceptForm } from "../../../../../../features/courses/concepts/CreateConceptForm"
+import Link from "next/link"
 
 async function getSection(sectionId: string, userId: string) {
   const section = await prisma.section.findUnique({
@@ -24,28 +24,28 @@ async function getSection(sectionId: string, userId: string) {
         },
       },
     },
-  });
+  })
 
   if (!section) {
-    notFound();
+    notFound()
   }
 
-  return section;
+  return section
 }
 
 export default async function SectionPage({
   params,
 }: {
-  params: { courseId: string; sectionId: string };
+  params: { courseId: string; sectionId: string }
 }) {
-  const { getUser } = getKindeServerSession();
-  const user = await getUser();
+  const { getUser } = getKindeServerSession()
+  const user = await getUser()
 
   if (!user || !user.id) {
-    return <div>Unauthorized</div>;
+    return <div>Unauthorized</div>
   }
 
-  const section = await getSection(params.sectionId, user.id);
+  const section = await getSection(params.sectionId, user.id)
 
   return (
     <div className="p-4">
@@ -64,5 +64,5 @@ export default async function SectionPage({
         ))}
       </div>
     </div>
-  );
+  )
 }

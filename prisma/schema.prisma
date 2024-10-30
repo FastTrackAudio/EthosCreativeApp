@@ -51,10 +51,17 @@ model Section {
 model Concept {
   id          String   @id @default(cuid())
   title       String
-  content     Json     @default("{}")
+  // BlockNote editor content - stores blocks array with formatting, media, and inline content
+  content     Json     @default("[]")    // For storing BlockNote editor content
   videoUrl    String?
+  audioUrl    String?
   description String?
   imageUrl    String?
+  // Additional metadata for BlockNote content
+  blocks      Json?    @default("[]")    // For storing additional block metadata
+  attachments Json?    @default("[]")    // For storing file attachments
+  resources   Json?    @default("[]")    // For storing external resources/links
+  metadata    Json?    @default("{\"version\":1,\"editorConfig\":{\"defaultStyles\":{},\"customStyles\":[]}}")
   order       Int      @default(0)
   sectionId   String
   section     Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)

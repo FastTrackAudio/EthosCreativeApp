@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { ConceptCard } from "@/types/kanban"
 import { PlusCircle } from "lucide-react"
+import { ImageUpload } from "@/components/ui/image-upload"
 
 interface CardDialogProps {
   card?: ConceptCard
@@ -67,10 +68,12 @@ export function CardDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] bg-background">
         <DialogHeader>
-          <DialogTitle>{card ? "Edit Card" : "Create Card"}</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-[var(--color-text)]">
+            {card ? "Edit Card" : "Create Card"}
+          </DialogTitle>
+          <DialogDescription className="text-[var(--color-text-light)]">
             {card
               ? "Edit the card details below."
               : "Add a new card to this section."}
@@ -78,42 +81,38 @@ export function CardDialog({
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="title">Title</Label>
+            <Label htmlFor="title" className="text-[var(--color-text)]">
+              Title
+            </Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter card title"
+              className="bg-[var(--color-surface)] border-[var(--color-border)]"
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description" className="text-[var(--color-text)]">
+              Description
+            </Label>
             <Textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Enter card description"
+              className="bg-[var(--color-surface)] border-[var(--color-border)]"
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="image">Image URL</Label>
-            <div className="flex gap-2">
-              <Input
-                id="image"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="Enter image URL"
-              />
-              {imageUrl && (
-                <div className="h-10 w-10 rounded border">
-                  <img
-                    src={imageUrl}
-                    alt="Preview"
-                    className="h-full w-full object-cover rounded"
-                  />
-                </div>
-              )}
-            </div>
+            <Label htmlFor="image" className="text-[var(--color-text)]">
+              Image
+            </Label>
+            <ImageUpload
+              value={imageUrl}
+              onChange={setImageUrl}
+              disabled={false}
+            />
           </div>
         </div>
         <div className="flex justify-end gap-2">

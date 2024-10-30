@@ -1,20 +1,19 @@
-import React from "react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { getUserCourses } from "./page.server";
-import { CourseListWrapper } from "../../../features/courses/CourseListWrapper";
+import React from "react"
+import { getUserCourses } from "./page.server"
+import { StudentCourseListWrapper } from "@/features/courses/StudentCourseListWrapper"
 
-// This is a Server Component
 export default async function MyCourses() {
-  const initialCourses = await getUserCourses();
+  const initialCourses = await getUserCourses()
 
   return (
-    <div className="p-4 space-y-4">
-      <h1 className="text-2xl font-bold">My Courses</h1>
-      <Link href="/dashboard/my-courses/create">
-        <Button>Create New Course</Button>
-      </Link>
-      <CourseListWrapper initialCourses={initialCourses} />
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">My Courses</h1>
+        <p className="text-muted-foreground mt-1">
+          Continue learning from where you left off
+        </p>
+      </div>
+      <StudentCourseListWrapper initialCourses={initialCourses} />
     </div>
-  );
+  )
 }

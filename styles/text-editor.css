@@ -73,3 +73,20 @@
   padding: 2px 6px;
   pointer-events: none;
 }
+
+/* Add these styles at the bottom of the file */
+
+/* Center images */
+.group.relative.w-full {
+  display: flex;
+  justify-content: center;
+}
+
+/* Text editor transparency */
+.bn-container[data-transparent="true"] {
+  --bn-colors-editor-background: transparent !important;
+}
+
+.bn-container[data-transparent="true"] .bn-editor {
+  background: transparent !important;
+}

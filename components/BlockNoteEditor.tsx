@@ -7,11 +7,12 @@ import { useCreateBlockNote } from "@blocknote/react"
 import { BlockNoteView } from "@blocknote/mantine"
 import "@blocknote/mantine/style.css"
 import { useTheme } from "next-themes"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 interface BlockNoteEditorProps {
   conceptId: string
   initialContent: string | null
+  onUpdate?: (content: string) => void
+  isTransparent?: boolean
 }
 
 const defaultBlock: PartialBlock[] = [
@@ -24,12 +25,11 @@ const defaultBlock: PartialBlock[] = [
 export function BlockNoteEditorComponent({
   conceptId,
   initialContent,
+  onUpdate,
+  isTransparent,
 }: BlockNoteEditorProps) {
   const { resolvedTheme } = useTheme()
-  const [showSaveToast, setShowSaveToast] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
   const editorRef = useRef<BlockNoteEditor | null>(null)
-  const queryClient = useQueryClient()
 
   // Parse initial content or use default
   const parsedContent = useMemo(() => {
@@ -66,54 +66,24 @@ export function BlockNoteEditorComponent({
     initialContent: parsedContent,
   })
 
-  const updateContentMutation = useMutation({
-    mutationFn: async (blocks: PartialBlock[]) => {
-      setIsSaving(true)
-      const response = await fetch(`/api/concepts/${conceptId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ content: blocks }),
-      })
-      if (!response.ok) throw new Error("Failed to save content")
-      return response.json()
-    },
-    onSuccess: () => {
-      setIsSaving(false)
-      setShowSaveToast(true)
-      setTimeout(() => setShowSaveToast(false), 2000)
-      queryClient.invalidateQueries({ queryKey: ["concept", conceptId] })
-    },
-    onError: (error) => {
-      setIsSaving(false)
-      console.error("Failed to save content:", error)
-    },
-  })
-
   useEffect(() => {
     editorRef.current = editor
   }, [editor])
 
-  // Debounced save handler
+  // Content change handler without auto-save
   useEffect(() => {
-    let saveTimeout: NodeJS.Timeout
-
     const handleChange = () => {
-      if (!editorRef.current) return
-      clearTimeout(saveTimeout)
-      saveTimeout = setTimeout(() => {
-        updateContentMutation.mutate(editorRef.current!.topLevelBlocks)
-      }, 1000)
+      if (!editorRef.current || !onUpdate) return
+      const content = JSON.stringify(editorRef.current.topLevelBlocks)
+      onUpdate(content)
     }
 
     editor.onEditorContentChange(handleChange)
 
     return () => {
-      clearTimeout(saveTimeout)
       editor.onEditorContentChange(() => {})
     }
-  }, [editor, updateContentMutation])
+  }, [editor, onUpdate])
 
   if (!editor) {
     return <div>Loading editor...</div>
@@ -124,17 +94,9 @@ export function BlockNoteEditorComponent({
       <BlockNoteView
         editor={editor}
         theme={resolvedTheme === "dark" ? "dark" : "light"}
+        className={isTransparent ? "bg-transparent" : ""}
+        data-transparent={isTransparent}
       />
-      {showSaveToast && (
-        <div className="absolute bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg">
-          Content saved!
-        </div>
-      )}
-      {isSaving && (
-        <div className="absolute bottom-4 right-4 bg-blue-500 text-white px-4 py-2 rounded shadow-lg">
-          Saving...
-        </div>
-      )}
     </div>
   )
 }

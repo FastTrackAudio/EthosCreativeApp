@@ -1,262 +1,255 @@
 "use client"
 
-import React, { useState, useRef, useEffect } from "react"
-import ReactPlayer from "react-player"
-import { motion, AnimatePresence } from "framer-motion"
-import { useTheme } from "next-themes"
-import { Slider } from "@/components/ui/slider"
+import React, { useRef, useState, useEffect } from "react"
+import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
-import { Volume2, VolumeX, Maximize, Minimize, Play, Pause } from "lucide-react"
-import Image from "next/image"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Slider } from "@/components/ui/slider"
+import { cn } from "@/lib/utils"
+import { Play, Pause, Volume2, VolumeX, Maximize } from "lucide-react"
+
+// Fix the dynamic import with forwardRef
+const ReactPlayer = dynamic(
+  () =>
+    import("react-player").then((mod) => {
+      const { default: Player } = mod
+      return Player
+    }),
+  { ssr: false }
+)
 
 interface CustomVideoPlayerProps {
-  url?: string
+  src?: string
   title?: string
-  thumbnail?: string
-  uiHideTimeout?: number
+  description?: string
+  autoPlay?: boolean
+  muted?: boolean
+  loop?: boolean
+  controls?: boolean
+  width?: string | number
+  height?: string | number
+  onPlay?: () => void
+  onPause?: () => void
+  onEnded?: () => void
+  onError?: (error: unknown) => void
 }
 
-export default function CustomVideoPlayer({
-  url = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-  title = "Big Buck Bunny",
-  thumbnail = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg",
-  uiHideTimeout = 3000,
+export function CustomVideoPlayer({
+  src = "",
+  title,
+  description,
+  autoPlay = false,
+  muted: initialMuted = false,
+  loop = false,
+  controls = true,
+  width = "100%",
+  height = "100%",
+  onPlay,
+  onPause,
+  onEnded,
+  onError,
 }: CustomVideoPlayerProps) {
-  const [playing, setPlaying] = useState(false)
+  const isYouTube = src?.includes("youtube.com") || src?.includes("youtu.be")
+
+  // If it's a YouTube video, render with native controls
+  if (isYouTube) {
+    return (
+      <div className="space-y-4">
+        <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
+          <ReactPlayer
+            url={src}
+            width={width}
+            height={height}
+            playing={autoPlay}
+            muted={initialMuted}
+            loop={loop}
+            controls={true}
+            onPlay={onPlay}
+            onPause={onPause}
+            onEnded={onEnded}
+            onError={onError}
+            config={{
+              youtube: {
+                playerVars: {
+                  modestbranding: 1,
+                  playsinline: 1,
+                },
+              },
+            }}
+          />
+        </div>
+        {(title || description) && (
+          <div className="space-y-2">
+            {title && <h2 className="text-xl font-semibold">{title}</h2>}
+            {description && (
+              <p className="text-muted-foreground">{description}</p>
+            )}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // For non-YouTube videos, use our custom controls
+  const [playing, setPlaying] = useState(autoPlay)
   const [volume, setVolume] = useState(0.5)
-  const [muted, setMuted] = useState(false)
+  const [muted, setMuted] = useState(initialMuted)
   const [played, setPlayed] = useState(0)
   const [duration, setDuration] = useState(0)
-  const [playbackRate, setPlaybackRate] = useState(1)
-  const [fullscreen, setFullscreen] = useState(false)
-  const [isDraggingVolume, setIsDraggingVolume] = useState(false)
-  const [showThumbnail, setShowThumbnail] = useState(true)
-  const [generatedThumbnail, setGeneratedThumbnail] = useState<string | null>(
-    null
-  )
-  const [showUI, setShowUI] = useState(true)
-
-  const playerRef = useRef<ReactPlayer>(null)
+  const [showControls, setShowControls] = useState(true)
+  const [seeking, setSeeking] = useState(false)
+  const playerRef = useRef<any>(null)
   const playerContainerRef = useRef<HTMLDivElement>(null)
-  const volumeBarRef = useRef<HTMLDivElement>(null)
-  const uiTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const { theme } = useTheme()
 
   useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.code === "Space") {
-        e.preventDefault()
-        setPlaying(!playing)
-      }
+    let timeout: NodeJS.Timeout
+    const handleMouseMove = () => {
+      setShowControls(true)
+      clearTimeout(timeout)
+      timeout = setTimeout(() => {
+        if (playing) {
+          setShowControls(false)
+        }
+      }, 2000)
     }
 
-    document.addEventListener("keydown", handleKeyPress)
-    return () => document.removeEventListener("keydown", handleKeyPress)
-  }, [playing])
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (isDraggingVolume && volumeBarRef.current) {
-        const rect = volumeBarRef.current.getBoundingClientRect()
-        const x = e.clientX - rect.left
-        const newVolume = Math.max(0, Math.min(1, x / rect.width))
-        handleVolumeChange(newVolume)
-      }
-    }
-
-    const handleMouseUp = () => {
-      setIsDraggingVolume(false)
-    }
-
-    if (isDraggingVolume) {
-      document.addEventListener("mousemove", handleMouseMove)
-      document.addEventListener("mouseup", handleMouseUp)
+    const container = playerContainerRef.current
+    if (container) {
+      container.addEventListener("mousemove", handleMouseMove)
     }
 
     return () => {
-      document.removeEventListener("mousemove", handleMouseMove)
-      document.removeEventListener("mouseup", handleMouseUp)
+      if (container) {
+        container.removeEventListener("mousemove", handleMouseMove)
+      }
+      clearTimeout(timeout)
     }
-  }, [isDraggingVolume])
-
-  useEffect(() => {
-    if (!thumbnail && !generatedThumbnail) {
-      generateThumbnail()
-    }
-  }, [thumbnail, generatedThumbnail])
-
-  const generateThumbnail = () => {
-    const video = document.createElement("video")
-    video.src = url
-    video.crossOrigin = "anonymous"
-    video.addEventListener("loadeddata", () => {
-      video.currentTime = 1 // Set to 1 second to avoid black frame
-    })
-    video.addEventListener("seeked", () => {
-      const canvas = document.createElement("canvas")
-      canvas.width = video.videoWidth
-      canvas.height = video.videoHeight
-      canvas
-        .getContext("2d")
-        ?.drawImage(video, 0, 0, canvas.width, canvas.height)
-      setGeneratedThumbnail(canvas.toDataURL())
-    })
-  }
+  }, [playing])
 
   const handlePlayPause = () => {
     setPlaying(!playing)
-    setShowThumbnail(false)
-    showUITemporarily()
+    if (playing) {
+      onPause?.()
+    } else {
+      onPlay?.()
+    }
   }
 
-  const handleVolumeChange = (newVolume: number) => {
-    setVolume(newVolume)
-    setMuted(newVolume === 0)
-    showUITemporarily()
+  const handleVolumeChange = (value: number[]) => {
+    setVolume(value[0])
+    setMuted(value[0] === 0)
+    if (playerRef.current) {
+      const player = playerRef.current.getInternalPlayer()
+      if (player?.setVolume) {
+        player.setVolume(value[0] * 100)
+      }
+    }
   }
 
   const handleToggleMute = () => {
-    setMuted(!muted)
-    showUITemporarily()
+    if (playerRef.current) {
+      const player = playerRef.current.getInternalPlayer()
+      const newMuted = !muted
+      setMuted(newMuted)
+      if (player?.mute && player?.unMute) {
+        if (newMuted) {
+          player.mute()
+        } else {
+          player.unMute()
+        }
+      }
+    }
   }
 
   const handleSeekChange = (value: number[]) => {
-    setPlayed(value[0])
-    playerRef.current?.seekTo(value[0])
-    showUITemporarily()
+    if (!playerRef.current) return
+    setSeeking(true)
+    const newTime = value[0]
+    setPlayed(newTime)
+
+    const duration = playerRef.current.getDuration()
+    const seekTime = duration * newTime
+    playerRef.current.seekTo(seekTime, "seconds")
+    setSeeking(false)
   }
 
-  const handleProgress = (state: { played: number }) => {
-    if (!playerRef.current?.seeking) {
-      setPlayed(state.played)
+  const handleProgress = (state: { played: number; playedSeconds: number }) => {
+    if (!seeking) {
+      const duration = playerRef.current?.getDuration() || 0
+      setPlayed(state.playedSeconds / duration)
     }
   }
 
-  const handleDuration = (duration: number) => setDuration(duration)
-
-  const handlePlaybackRateChange = (value: string) => {
-    setPlaybackRate(parseFloat(value))
-    showUITemporarily()
-  }
-
-  const handleFullscreenToggle = () => {
-    if (!document.fullscreenElement) {
-      playerContainerRef.current?.requestFullscreen()
-      setFullscreen(true)
-    } else {
-      document.exitFullscreen()
-      setFullscreen(false)
-    }
-    showUITemporarily()
-  }
-
-  const handleVolumeMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    setIsDraggingVolume(true)
-    const rect = volumeBarRef.current?.getBoundingClientRect()
-    if (rect) {
-      const x = e.clientX - rect.left
-      const newVolume = Math.max(0, Math.min(1, x / rect.width))
-      handleVolumeChange(newVolume)
-    }
-  }
-
-  const showUITemporarily = () => {
-    setShowUI(true)
-    if (uiTimeoutRef.current) {
-      clearTimeout(uiTimeoutRef.current)
-    }
-    uiTimeoutRef.current = setTimeout(() => {
-      setShowUI(false)
-    }, uiHideTimeout)
-  }
-
-  const handleMouseMove = () => {
-    showUITemporarily()
+  const handleDuration = (duration: number) => {
+    setDuration(duration)
   }
 
   const formatTime = (seconds: number) => {
+    if (!seconds || isNaN(seconds)) return "0:00"
+
     const date = new Date(seconds * 1000)
-    const hh = date.getUTCHours()
     const mm = date.getUTCMinutes()
     const ss = date.getUTCSeconds().toString().padStart(2, "0")
-    if (hh) {
-      return `${hh}:${mm.toString().padStart(2, "0")}:${ss}`
-    }
     return `${mm}:${ss}`
   }
 
+  const handleFullscreen = () => {
+    if (playerContainerRef.current) {
+      if (document.fullscreenElement) {
+        document.exitFullscreen()
+      } else {
+        playerContainerRef.current.requestFullscreen()
+      }
+    }
+  }
+
   return (
-    <div
-      ref={playerContainerRef}
-      className="relative w-full max-w-4xl mx-auto bg-black rounded-lg overflow-hidden"
-      onMouseMove={handleMouseMove}
-      onMouseLeave={() => setShowUI(false)}
-    >
-      {showThumbnail && (thumbnail || generatedThumbnail) && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Image
-            src={thumbnail || generatedThumbnail || ""}
-            alt={title}
-            layout="fill"
-            objectFit="cover"
-          />
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handlePlayPause}
-            aria-label="Play"
-            className="text-white hover:text-white bg-black/50 rounded-full p-8"
-          >
-            <Play className="h-12 w-12" />
-          </Button>
-        </div>
-      )}
-      <ReactPlayer
-        ref={playerRef}
-        url={url}
-        width="100%"
-        height="100%"
-        playing={playing}
-        volume={muted ? 0 : volume}
-        muted={muted}
-        playbackRate={playbackRate}
-        onProgress={handleProgress}
-        onDuration={handleDuration}
-        progressInterval={100}
-      />
-      <AnimatePresence>
-        {showUI && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4"
+    <div className="space-y-4">
+      <div
+        ref={playerContainerRef}
+        className="relative group bg-[var(--color-surface)] rounded-lg overflow-hidden"
+      >
+        <ReactPlayer
+          ref={playerRef}
+          url={src}
+          width={width}
+          height={height}
+          playing={playing}
+          volume={volume}
+          muted={muted}
+          loop={loop}
+          onProgress={handleProgress}
+          onDuration={setDuration}
+          onEnded={onEnded}
+          onError={onError}
+          style={{ aspectRatio: "16/9" }}
+        />
+
+        {controls && (
+          <div
+            className={cn(
+              "absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[var(--color-surface-elevated)] via-[var(--color-surface-elevated)]/50 to-transparent p-4 transition-opacity duration-300",
+              {
+                "opacity-0": !showControls && playing,
+                "opacity-100": showControls || !playing,
+              }
+            )}
           >
             <Slider
+              defaultValue={[0]}
               value={[played]}
-              min={0}
-              max={0.999999}
-              step={0.000001}
+              max={1}
+              step={0.001}
               onValueChange={handleSeekChange}
-              className="w-full mb-4 [&>.bg-primary]:bg-white [&>.bg-muted]:bg-black [&_[role=slider]]:bg-white"
+              className="mb-4 [&_.relative]:bg-[var(--color-border)] [&_[role=slider]]:bg-[var(--color-text)]"
             />
-            <div className="flex items-center justify-between text-white">
-              <div className="flex items-center space-x-4">
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
                 <Button
                   variant="ghost"
                   size="icon"
+                  className="text-[var(--color-text)] hover:text-[var(--color-text)]/80"
                   onClick={handlePlayPause}
-                  aria-label={playing ? "Pause" : "Play"}
-                  className="text-white hover:text-white"
                 >
                   {playing ? (
                     <Pause className="h-6 w-6" />
@@ -264,72 +257,59 @@ export default function CustomVideoPlayer({
                     <Play className="h-6 w-6" />
                   )}
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleToggleMute}
-                  aria-label={muted ? "Unmute" : "Mute"}
-                  className="text-white hover:text-white"
-                >
-                  {muted ? (
-                    <VolumeX className="h-6 w-6" />
-                  ) : (
-                    <Volume2 className="h-6 w-6" />
-                  )}
-                </Button>
-                <div
-                  ref={volumeBarRef}
-                  className="relative w-24 h-1 bg-black rounded-full overflow-hidden cursor-pointer"
-                  onMouseDown={handleVolumeMouseDown}
-                >
-                  <div
-                    className="absolute top-0 left-0 h-full bg-white rounded-full"
-                    style={{ width: `${(muted ? 0 : volume) * 100}%` }}
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-[var(--color-text)] hover:text-[var(--color-text)]/80"
+                    onClick={handleToggleMute}
+                  >
+                    {muted || volume === 0 ? (
+                      <VolumeX className="h-6 w-6" />
+                    ) : (
+                      <Volume2 className="h-6 w-6" />
+                    )}
+                  </Button>
+
+                  <Slider
+                    defaultValue={[0.5]}
+                    value={[muted ? 0 : volume]}
+                    max={1}
+                    step={0.01}
+                    onValueChange={handleVolumeChange}
+                    className="w-32"
                   />
                 </div>
-                <span className="text-sm">
-                  {formatTime(duration * played)} / {formatTime(duration)}
+
+                <span className="text-sm text-[var(--color-text)] min-w-[100px]">
+                  {formatTime(played * duration)} / {formatTime(duration)}
                 </span>
               </div>
-              <div className="flex items-center space-x-4">
-                <Select
-                  onValueChange={handlePlaybackRateChange}
-                  value={playbackRate.toString()}
-                >
-                  <SelectTrigger className="w-[100px] bg-transparent text-white border-white">
-                    <SelectValue placeholder="Speed" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[0.5, 0.75, 1, 1.25, 1.5, 2].map((rate) => (
-                      <SelectItem key={rate} value={rate.toString()}>
-                        {rate}x
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleFullscreenToggle}
-                  aria-label={
-                    fullscreen ? "Exit fullscreen" : "Enter fullscreen"
-                  }
-                  className="text-white hover:text-white"
-                >
-                  {fullscreen ? (
-                    <Minimize className="h-6 w-6" />
-                  ) : (
-                    <Maximize className="h-6 w-6" />
-                  )}
-                </Button>
-              </div>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-[var(--color-text)] hover:text-[var(--color-text)]/80"
+                onClick={handleFullscreen}
+              >
+                <Maximize className="h-6 w-6" />
+              </Button>
             </div>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
-      <div className="absolute top-4 left-4 right-4 text-white">
-        <h2 className="text-xl font-semibold">{title}</h2>
       </div>
+
+      {(title || description) && (
+        <div className="space-y-2">
+          {title && <h2 className="text-xl font-semibold">{title}</h2>}
+          {description && (
+            <p className="text-muted-foreground">{description}</p>
+          )}
+        </div>
+      )}
     </div>
   )
 }
+
+export default CustomVideoPlayer

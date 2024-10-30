@@ -3,7 +3,7 @@
 import { DragDropContext } from "@hello-pangea/dnd"
 import { Section } from "@/components/kanban/section"
 import { Button } from "@/components/ui/button"
-import { PlusCircle, ArrowUpDown } from "lucide-react"
+import { PlusCircle, ArrowUpDown, ImageOff, Type } from "lucide-react"
 import { DragEndResult, SortOption } from "@/types/kanban"
 import { useState } from "react"
 import {
@@ -47,6 +47,8 @@ export function KanbanBoard({
 }: KanbanBoardProps) {
   const [sortBy, setSortBy] = useState<SortOption>("custom")
   const [isDragging, setIsDragging] = useState(false)
+  const [hideImages, setHideImages] = useState(false)
+  const [hideDescriptions, setHideDescriptions] = useState(false)
 
   const handleDragEnd = (result: DragEndResult) => {
     setIsDragging(false)
@@ -134,35 +136,65 @@ export function KanbanBoard({
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold mb-2">{title}</h1>
-            <p className="text-muted-foreground">{description}</p>
+            <h1 className="text-3xl font-bold text-[var(--color-text)] mb-2">
+              {title}
+            </h1>
+            <p className="text-[var(--color-text-light)]">{description}</p>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2">
-                <ArrowUpDown className="h-4 w-4" />
-                Sort Cards
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Sort by</DropdownMenuLabel>
-              <DropdownMenuRadioGroup
-                value={sortBy}
-                onValueChange={(value) => setSortBy(value as SortOption)}
-              >
-                <DropdownMenuRadioItem value="custom">
-                  Custom (Default)
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="name">Name</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="created">
-                  Date Created
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="modified">
-                  Date Modified
-                </DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              className="flex items-center gap-2"
+              onClick={() => setHideImages(!hideImages)}
+            >
+              <ImageOff
+                className={`h-4 w-4 ${
+                  hideImages ? "text-muted-foreground" : ""
+                }`}
+              />
+              {hideImages ? "Show Images" : "Hide Images"}
+            </Button>
+            <Button
+              variant="outline"
+              className="flex items-center gap-2"
+              onClick={() => setHideDescriptions(!hideDescriptions)}
+            >
+              <Type
+                className={`h-4 w-4 ${
+                  hideDescriptions ? "text-muted-foreground" : ""
+                }`}
+              />
+              {hideDescriptions ? "Show Descriptions" : "Hide Descriptions"}
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <ArrowUpDown className="h-4 w-4" />
+                  Sort Cards
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+                <DropdownMenuRadioGroup
+                  value={sortBy}
+                  onValueChange={(value) => setSortBy(value as SortOption)}
+                >
+                  <DropdownMenuRadioItem value="custom">
+                    Custom (Default)
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="name">
+                    Name
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="created">
+                    Date Created
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="modified">
+                    Date Modified
+                  </DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
 
@@ -175,6 +207,8 @@ export function KanbanBoard({
               cards={sortCards(
                 cards?.filter((card) => card.sectionId === section.id)
               )}
+              hideImages={hideImages}
+              hideDescriptions={hideDescriptions}
               onUpdateSection={onUpdateSection}
               onDeleteSection={onDeleteSection}
               onCreateCard={onCreateCard}
@@ -185,7 +219,9 @@ export function KanbanBoard({
 
           <Button
             variant="outline"
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 border-[var(--color-border-transparent)] 
+            hover:border-[var(--color-border-contrasted)] bg-[var(--color-surface)] 
+            text-[var(--color-text-light)] hover:text-[var(--color-text)] transition-colors"
             onClick={handleCreateSection}
           >
             <PlusCircle className="h-4 w-4" />

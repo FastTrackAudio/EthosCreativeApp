@@ -1,7 +1,7 @@
-import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
-import prisma from "@/app/utils/db";
-import { notFound } from "next/navigation";
-import { KanbanBoard } from "../../../../components/kanban-board/KanbanBoard";
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server"
+import prisma from "@/app/utils/db"
+import { notFound } from "next/navigation"
+import { KanbanBoard } from "../../../../components/kanban-board/KanbanBoard"
 
 async function getCourse(courseId: string, userId: string) {
   const course = await prisma.course.findUnique({
@@ -9,28 +9,28 @@ async function getCourse(courseId: string, userId: string) {
       id: courseId,
       userId: userId,
     },
-  });
+  })
 
   if (!course) {
-    notFound();
+    notFound()
   }
 
-  return course;
+  return course
 }
 
 export default async function CourseCreatePage({
   params,
 }: {
-  params: { courseId: string };
+  params: { courseId: string }
 }) {
-  const { getUser } = getKindeServerSession();
-  const user = await getUser();
+  const { getUser } = getKindeServerSession()
+  const user = await getUser()
 
   if (!user || !user.id) {
-    return <div>Unauthorized</div>;
+    return <div>Unauthorized</div>
   }
 
-  const course = await getCourse(params.courseId, user.id);
+  const course = await getCourse(params.courseId, user.id)
 
   return (
     <div className="p-4">
@@ -38,5 +38,5 @@ export default async function CourseCreatePage({
       <p className="mb-4">{course.description}</p>
       <KanbanBoard courseId={course.id} />
     </div>
-  );
+  )
 }

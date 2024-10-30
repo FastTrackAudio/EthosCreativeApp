@@ -1,95 +1,82 @@
-import { NextResponse } from "next/server";
-import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
-import prisma from "@/app/utils/db";
-
-export async function POST(
-  req: Request,
-  { params }: { params: { conceptId: string } }
-) {
-  const { getUser } = getKindeServerSession();
-  const user = await getUser();
-
-  if (!user || !user.id) {
-    return new Response("Unauthorized", { status: 401 });
-  }
-
-  const { content } = await req.json();
-
-  try {
-    const updatedConcept = await prisma.concept.update({
-      where: {
-        id: params.conceptId,
-        section: {
-          course: {
-            userId: user.id,
-          },
-        },
-      },
-      data: {
-        content,
-      },
-    });
-
-    return NextResponse.json(updatedConcept);
-  } catch (error) {
-    console.error("Failed to update concept:", error);
-    return NextResponse.json(
-      { error: "Failed to update concept" },
-      { status: 500 }
-    );
-  }
-}
+import { NextResponse } from "next/server"
+import prisma from "@/app/utils/db"
 
 export async function GET(
   request: Request,
   { params }: { params: { conceptId: string } }
 ) {
-  const { getUser } = getKindeServerSession();
-  const user = await getUser();
-
-  if (!user || !user.id) {
-    return new NextResponse("Unauthorized", { status: 401 });
-  }
-
-  const concept = await prisma.concept.findUnique({
-    where: {
-      id: params.conceptId,
-    },
-    include: {
-      section: {
-        select: {
-          id: true,
-          courseId: true,
-        },
+  try {
+    const concept = await prisma.concept.findUnique({
+      where: {
+        id: params.conceptId,
       },
-    },
-  });
+    })
 
-  if (!concept) {
-    return new NextResponse("Concept not found", { status: 404 });
+    console.log("Retrieved concept from DB:", concept)
+
+    if (!concept) {
+      return NextResponse.json({ error: "Concept not found" }, { status: 404 })
+    }
+
+    // Ensure content is properly formatted
+    let formattedContent
+    try {
+      formattedContent = concept.content
+        ? JSON.parse(concept.content as string)
+        : {
+            version: "1",
+            blocks: [],
+          }
+
+      console.log("Formatted content:", formattedContent)
+    } catch (e) {
+      console.error("Error parsing content from DB:", e)
+      formattedContent = {
+        version: "1",
+        blocks: [],
+      }
+    }
+
+    const response = {
+      ...concept,
+      content: JSON.stringify(formattedContent),
+    }
+
+    console.log("Sending response:", response)
+    return NextResponse.json(response)
+  } catch (error) {
+    console.error("Error fetching concept:", error)
+    return NextResponse.json(
+      { error: "Error fetching concept" },
+      { status: 500 }
+    )
   }
-
-  return NextResponse.json(concept);
 }
 
 export async function PATCH(
   request: Request,
   { params }: { params: { conceptId: string } }
 ) {
-  const { content } = await request.json();
-
   try {
-    const updatedConcept = await prisma.concept.update({
-      where: { id: params.conceptId },
-      data: { content: JSON.stringify(content) },
-    });
+    const body = await request.json()
+    console.log("Received PATCH request body:", body)
 
-    return NextResponse.json(updatedConcept);
+    const updatedConcept = await prisma.concept.update({
+      where: {
+        id: params.conceptId,
+      },
+      data: {
+        content: body.content,
+      },
+    })
+
+    console.log("Updated concept in DB:", updatedConcept)
+    return NextResponse.json(updatedConcept)
   } catch (error) {
-    console.error("Error updating concept:", error);
+    console.error("Error updating concept:", error)
     return NextResponse.json(
-      { error: "Failed to update concept" },
+      { error: "Error updating concept" },
       { status: 500 }
-    );
+    )
   }
 }

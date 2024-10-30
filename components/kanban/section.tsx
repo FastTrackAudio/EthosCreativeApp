@@ -22,6 +22,8 @@ import {
 interface SectionProps {
   section: SectionType
   cards: ConceptCardType[]
+  hideImages: boolean
+  hideDescriptions: boolean
   onUpdateSection: (section: Partial<SectionType>) => void
   onDeleteSection: (id: string) => void
   onCreateCard: (data: Partial<ConceptCardType> & { sectionId: string }) => void
@@ -32,6 +34,8 @@ interface SectionProps {
 export function Section({
   section,
   cards,
+  hideImages,
+  hideDescriptions,
   onUpdateSection,
   onDeleteSection,
   onCreateCard,
@@ -54,7 +58,7 @@ export function Section({
   }
 
   return (
-    <Card className="w-80 flex flex-col">
+    <Card className="w-80 flex flex-col bg-muted">
       <CardHeader className="p-3 space-y-0">
         <div className="flex items-center justify-between">
           {isEditing ? (
@@ -62,7 +66,7 @@ export function Section({
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="h-8"
+                className="h-8 bg-[var(--color-surface-elevated)] border-[var(--color-border)]"
                 autoFocus
               />
               <Button
@@ -84,7 +88,9 @@ export function Section({
             </div>
           ) : (
             <>
-              <h3 className="text-sm font-medium">{section.title}</h3>
+              <h3 className="text-sm font-medium text-[var(--color-text)]">
+                {section.title}
+              </h3>
               <div className="flex items-center gap-1">
                 <Button
                   variant="ghost"
@@ -119,13 +125,15 @@ export function Section({
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
-            className="flex-1 p-3 pt-0"
+            className="flex-1 p-3 pt-0 space-y-3"
           >
             {cards.map((card, index) => (
               <ConceptCard
                 key={card.id}
                 card={card}
                 index={index}
+                hideImages={hideImages}
+                hideDescriptions={hideDescriptions}
                 onUpdate={onUpdateCard}
                 onDelete={onDeleteCard}
               />

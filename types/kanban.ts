@@ -1,6 +1,7 @@
 import { Concept, Section } from "@prisma/client"
 
 export interface ConceptCard extends Omit<Concept, "createdAt" | "updatedAt"> {
+  courseId: string
   createdAt: string
   updatedAt: string
 }

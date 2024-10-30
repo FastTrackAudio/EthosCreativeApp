@@ -394,31 +394,15 @@ export default function ManageSectionsPage({
           </Link>
         </div>
         <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold">{course?.title}</h1>
-            <p className="text-muted-foreground">{course?.description}</p>
-          </div>
           <div className="flex gap-2">
             <Link
               href={`/dashboard/admin/manage-courses/${params.courseId}/edit`}
-            >
-              <Button variant="outline" size="sm">
-                Edit Course
-              </Button>
-            </Link>
+            ></Link>
           </div>
         </div>
       </div>
 
       <div className="bg-muted/50 rounded-lg p-4">
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold">Section Management</h2>
-          <p className="text-sm text-muted-foreground">
-            Drag and drop sections to reorder. Click on a concept to edit its
-            content.
-          </p>
-        </div>
-
         <KanbanBoard
           title="Course Sections"
           description="Organize your course sections and concepts"
