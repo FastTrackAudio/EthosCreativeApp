@@ -1,46 +1,59 @@
-import { NextResponse } from "next/server";
-import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
-import prisma from "@/app/utils/db";
+import { NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
 
 export async function PATCH(
-  req: Request,
+  request: Request,
   { params }: { params: { courseId: string; conceptId: string } }
 ) {
-  const { getUser } = getKindeServerSession();
-  const user = await getUser();
-
-  if (!user || !user.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { title, content, videoUrl, description } = await req.json();
-
   try {
-    const updatedConcept = await prisma.concept.update({
+    const data = await request.json()
+
+    // Verify the concept exists and belongs to the course
+    const concept = await prisma.concept.findFirst({
       where: {
         id: params.conceptId,
         section: {
-          course: {
-            id: params.courseId,
-            userId: user.id,
-          },
+          courseId: params.courseId,
         },
       },
-      data: {
-        title,
-        content,
-        videoUrl,
-        description,
-      },
-    });
+    })
 
-    return NextResponse.json(updatedConcept);
+    if (!concept) {
+      return new NextResponse("Concept not found", { status: 404 })
+    }
+
+    // If changing sections, verify the new section belongs to the course
+    if (data.sectionId) {
+      const section = await prisma.section.findUnique({
+        where: {
+          id: data.sectionId,
+          courseId: params.courseId,
+        },
+      })
+
+      if (!section) {
+        return new NextResponse("Invalid section ID", { status: 400 })
+      }
+    }
+
+    // Update the concept
+    const updatedConcept = await prisma.concept.update({
+      where: {
+        id: params.conceptId,
+      },
+      data: {
+        title: data.title,
+        description: data.description,
+        imageUrl: data.imageUrl,
+        sectionId: data.sectionId,
+        order: data.order,
+      },
+    })
+
+    return NextResponse.json(updatedConcept)
   } catch (error) {
-    console.error("Failed to update concept:", error);
-    return NextResponse.json(
-      { error: "Failed to update concept" },
-      { status: 500 }
-    );
+    console.error("Error updating concept:", error)
+    return new NextResponse("Error updating concept", { status: 500 })
   }
 }
 
@@ -48,11 +61,11 @@ export async function DELETE(
   req: Request,
   { params }: { params: { courseId: string; conceptId: string } }
 ) {
-  const { getUser } = getKindeServerSession();
-  const user = await getUser();
+  const { getUser } = getKindeServerSession()
+  const user = await getUser()
 
   if (!user || !user.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   try {
@@ -66,15 +79,15 @@ export async function DELETE(
           },
         },
       },
-    });
+    })
 
-    return NextResponse.json(deletedConcept);
+    return NextResponse.json(deletedConcept)
   } catch (error) {
-    console.error("Failed to delete concept:", error);
+    console.error("Failed to delete concept:", error)
     return NextResponse.json(
       { error: "Failed to delete concept" },
       { status: 500 }
-    );
+    )
   }
 }
 
@@ -82,11 +95,11 @@ export async function GET(
   req: Request,
   { params }: { params: { courseId: string; conceptId: string } }
 ) {
-  const { getUser } = getKindeServerSession();
-  const user = await getUser();
+  const { getUser } = getKindeServerSession()
+  const user = await getUser()
 
   if (!user || !user.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   try {
@@ -100,18 +113,18 @@ export async function GET(
           },
         },
       },
-    });
+    })
 
     if (!concept) {
-      return NextResponse.json({ error: "Concept not found" }, { status: 404 });
+      return NextResponse.json({ error: "Concept not found" }, { status: 404 })
     }
 
-    return NextResponse.json(concept);
+    return NextResponse.json(concept)
   } catch (error) {
-    console.error("Failed to fetch concept:", error);
+    console.error("Failed to fetch concept:", error)
     return NextResponse.json(
       { error: "Failed to fetch concept" },
       { status: 500 }
-    );
+    )
   }
 }

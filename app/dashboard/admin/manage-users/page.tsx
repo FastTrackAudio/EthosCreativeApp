@@ -1,9 +1,9 @@
-"use client";
+"use client"
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import ManageUsers from "../../../../features/admin/manageUsers";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import ManageUsers from "../../../../features/admin/manageUsers"
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient()
 
 export default function ManageUsersPage() {
   return (
@@ -13,5 +13,5 @@ export default function ManageUsersPage() {
         <ManageUsers />
       </div>
     </QueryClientProvider>
-  );
+  )
 }

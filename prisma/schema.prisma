@@ -40,6 +40,7 @@ model Section {
   id          String    @id @default(cuid())
   title       String
   description String?
+  order       Int       @default(0)
   courseId    String
   course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
   concepts    Concept[]
@@ -54,6 +55,7 @@ model Concept {
   videoUrl    String?
   description String?
   imageUrl    String?
+  order       Int      @default(0)
   sectionId   String
   section     Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
   quiz        Quiz?    @relation(fields: [quizId], references: [id])

@@ -1,90 +1,122 @@
-"use client";
+"use client"
 
-import { useEffect, useState, useCallback, useRef } from "react";
-import { BlockNoteEditor, PartialBlock } from "@blocknote/core";
-import "@blocknote/core/fonts/inter.css";
-import { useCreateBlockNote } from "@blocknote/react";
-import { BlockNoteView } from "@blocknote/mantine";
-import "@blocknote/mantine/style.css";
-import * as Y from "yjs";
-import { useTheme } from "next-themes";
-import { Toast } from "@/components/ui/toast";
+import { useEffect, useState, useRef, useMemo } from "react"
+import { BlockNoteEditor, PartialBlock } from "@blocknote/core"
+import "@blocknote/core/fonts/inter.css"
+import { useCreateBlockNote } from "@blocknote/react"
+import { BlockNoteView } from "@blocknote/mantine"
+import "@blocknote/mantine/style.css"
+import { useTheme } from "next-themes"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 interface BlockNoteEditorProps {
-  conceptId: string;
-  sectionId: string;
-  courseId: string;
-  initialContent?: string | PartialBlock[];
+  conceptId: string
+  initialContent: string | null
 }
 
+const defaultBlock: PartialBlock[] = [
+  {
+    type: "paragraph",
+    content: "Start writing here...",
+  },
+]
+
 export function BlockNoteEditorComponent({
-  initialContent,
   conceptId,
-  sectionId,
-  courseId,
-}: {
-  initialContent: PartialBlock[];
-  conceptId: string;
-  sectionId: string;
-  courseId: string;
-}) {
-  const { resolvedTheme } = useTheme();
-  const [showSaveToast, setShowSaveToast] = useState(false);
-  const editorRef = useRef<BlockNoteEditor | null>(null);
+  initialContent,
+}: BlockNoteEditorProps) {
+  const { resolvedTheme } = useTheme()
+  const [showSaveToast, setShowSaveToast] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const editorRef = useRef<BlockNoteEditor | null>(null)
+  const queryClient = useQueryClient()
+
+  // Parse initial content or use default
+  const parsedContent = useMemo(() => {
+    if (!initialContent) return defaultBlock
+
+    try {
+      if (
+        typeof initialContent === "string" &&
+        initialContent.startsWith("[")
+      ) {
+        const parsed = JSON.parse(initialContent)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed
+        }
+      }
+
+      return [
+        {
+          type: "paragraph",
+          content: initialContent,
+        },
+      ]
+    } catch {
+      return [
+        {
+          type: "paragraph",
+          content: initialContent,
+        },
+      ]
+    }
+  }, [initialContent])
 
   const editor = useCreateBlockNote({
-    initialContent: initialContent,
-  });
+    initialContent: parsedContent,
+  })
 
-  useEffect(() => {
-    editorRef.current = editor;
-  }, [editor]);
-
-  const saveContent = useCallback(async () => {
-    if (!editorRef.current) return;
-    const content = editorRef.current.topLevelBlocks;
-    try {
+  const updateContentMutation = useMutation({
+    mutationFn: async (blocks: PartialBlock[]) => {
+      setIsSaving(true)
       const response = await fetch(`/api/concepts/${conceptId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ content }),
-      });
-      if (response.ok) {
-        setShowSaveToast(true);
-        setTimeout(() => setShowSaveToast(false), 2000); // Hide toast after 2 seconds
-      } else {
-        console.error("Failed to save content");
-      }
-    } catch (error) {
-      console.error("Error saving content:", error);
-    }
-  }, [conceptId]);
+        body: JSON.stringify({ content: blocks }),
+      })
+      if (!response.ok) throw new Error("Failed to save content")
+      return response.json()
+    },
+    onSuccess: () => {
+      setIsSaving(false)
+      setShowSaveToast(true)
+      setTimeout(() => setShowSaveToast(false), 2000)
+      queryClient.invalidateQueries({ queryKey: ["concept", conceptId] })
+    },
+    onError: (error) => {
+      setIsSaving(false)
+      console.error("Failed to save content:", error)
+    },
+  })
 
   useEffect(() => {
-    let saveTimeout: NodeJS.Timeout;
+    editorRef.current = editor
+  }, [editor])
+
+  // Debounced save handler
+  useEffect(() => {
+    let saveTimeout: NodeJS.Timeout
 
     const handleChange = () => {
-      if (!editorRef.current) return;
-      clearTimeout(saveTimeout);
-      saveTimeout = setTimeout(saveContent, 1000); // Save after 1 second of inactivity
-    };
-
-    if (editorRef.current) {
-      editorRef.current.onEditorContentChange(handleChange);
+      if (!editorRef.current) return
+      clearTimeout(saveTimeout)
+      saveTimeout = setTimeout(() => {
+        updateContentMutation.mutate(editorRef.current!.topLevelBlocks)
+      }, 1000)
     }
 
+    editor.onEditorContentChange(handleChange)
+
     return () => {
-      clearTimeout(saveTimeout);
-      if (editorRef.current) {
-        editorRef.current.onEditorContentChange(() => {});
-      }
-    };
-  }, [saveContent]);
+      clearTimeout(saveTimeout)
+      editor.onEditorContentChange(() => {})
+    }
+  }, [editor, updateContentMutation])
 
   if (!editor) {
-    return <div>Loading editor...</div>;
+    return <div>Loading editor...</div>
   }
 
   return (
@@ -94,62 +126,15 @@ export function BlockNoteEditorComponent({
         theme={resolvedTheme === "dark" ? "dark" : "light"}
       />
       {showSaveToast && (
-        <div className="absolute bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded">
+        <div className="absolute bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg">
           Content saved!
         </div>
       )}
+      {isSaving && (
+        <div className="absolute bottom-4 right-4 bg-blue-500 text-white px-4 py-2 rounded shadow-lg">
+          Saving...
+        </div>
+      )}
     </div>
-  );
-}
-
-function BlockNote({
-  doc,
-  theme,
-  initialContent,
-  conceptId,
-  sectionId,
-  courseId,
-}: {
-  doc: Y.Doc;
-  theme: string | undefined;
-  initialContent: PartialBlock[];
-  conceptId: string;
-  sectionId: string;
-  courseId: string;
-}) {
-  const editor: BlockNoteEditor = useCreateBlockNote({
-    initialContent,
-    collaboration: {
-      provider: null,
-      fragment: doc.getXmlFragment("document-store"),
-      user: {
-        name: "User",
-        color: "#000000",
-      },
-    },
-  });
-
-  useEffect(() => {
-    const saveContent = async () => {
-      const content = editor.topLevelBlocks;
-      await fetch(`/api/concepts/${conceptId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ content }),
-      });
-    };
-
-    const debounce = setTimeout(saveContent, 1000);
-
-    return () => clearTimeout(debounce);
-  }, [editor.topLevelBlocks, conceptId]);
-
-  return (
-    <BlockNoteView
-      editor={editor}
-      theme={theme === "dark" ? "dark" : "light"}
-    />
-  );
+  )
 }

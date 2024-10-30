@@ -1,4 +1,4 @@
-import prisma from "@/app/utils/db";
+import prisma from "@/app/utils/db"
 
 export async function getAdminCourses() {
   // Fetch all courses for admin view
@@ -11,7 +11,7 @@ export async function getAdminCourses() {
         },
       },
     },
-  });
+  })
 
-  return courses;
+  return courses
 }

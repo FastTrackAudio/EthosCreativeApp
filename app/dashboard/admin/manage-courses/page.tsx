@@ -1,11 +1,11 @@
-import React from "react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { getAdminCourses } from "./page.server";
-import { CourseListWrapper } from "@/features/courses/CourseListWrapper";
+import React from "react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { getAdminCourses } from "./page.server"
+import { CourseListWrapper } from "@/features/courses/CourseListWrapper"
 
 export default async function ManageCourses() {
-  const initialCourses = await getAdminCourses();
+  const initialCourses = await getAdminCourses()
 
   return (
     <div className="p-4 space-y-4">
@@ -15,5 +15,5 @@ export default async function ManageCourses() {
       </Link>
       <CourseListWrapper initialCourses={initialCourses} />
     </div>
-  );
+  )
 }

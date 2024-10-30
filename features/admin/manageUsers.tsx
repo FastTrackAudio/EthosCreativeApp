@@ -1,7 +1,7 @@
-"use client";
+"use client"
 
-import React from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import React from "react"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import {
   Table,
   TableBody,
@@ -10,61 +10,62 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/ui/table"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+} from "@/components/ui/select"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@/components/ui/popover"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Calendar } from "@/components/ui/calendar";
-import { Skeleton } from "@/components/ui/skeleton";
-import { format } from "date-fns";
-import { MoreHorizontal, Trash } from "lucide-react";
+} from "@/components/ui/dropdown-menu"
+import { Calendar } from "@/components/ui/calendar"
+import { Skeleton } from "@/components/ui/skeleton"
+import { format } from "date-fns"
+import { MoreHorizontal, Trash } from "lucide-react"
+import Link from "next/link"
 
 interface User {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  enrolled: boolean;
-  permissions: string;
-  artistPageUrl: string | null;
-  dateJoined: Date;
-  profileImage: string | null;
+  id: string
+  firstName: string
+  lastName: string
+  email: string
+  enrolled: boolean
+  permissions: string
+  artistPageUrl: string | null
+  dateJoined: Date
+  profileImage: string | null
 }
 
 const fetchUsers = async (): Promise<User[]> => {
-  const response = await fetch("/api/users");
+  const response = await fetch("/api/users")
   if (!response.ok) {
-    throw new Error("Failed to fetch users");
+    throw new Error("Failed to fetch users")
   }
-  return response.json();
-};
+  return response.json()
+}
 
 export default function ManageUsers() {
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
 
   const {
     data: users,
@@ -73,41 +74,41 @@ export default function ManageUsers() {
   } = useQuery<User[]>({
     queryKey: ["users"],
     queryFn: fetchUsers,
-  });
+  })
 
   const updateUserMutation = useMutation({
     mutationFn: async ({
       userId,
       data,
     }: {
-      userId: string;
-      data: Partial<User>;
+      userId: string
+      data: Partial<User>
     }) => {
       const response = await fetch(`/api/users/${userId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
-      });
+      })
       if (!response.ok) {
-        throw new Error("Failed to update user");
+        throw new Error("Failed to update user")
       }
-      return response.json();
+      return response.json()
     },
     onMutate: async ({ userId, data }) => {
-      await queryClient.cancelQueries({ queryKey: ["users"] });
-      const previousUsers = queryClient.getQueryData<User[]>(["users"]);
+      await queryClient.cancelQueries({ queryKey: ["users"] })
+      const previousUsers = queryClient.getQueryData<User[]>(["users"])
       queryClient.setQueryData<User[]>(["users"], (old) =>
         old?.map((user) => (user.id === userId ? { ...user, ...data } : user))
-      );
-      return { previousUsers };
+      )
+      return { previousUsers }
     },
     onError: (err, newTodo, context) => {
-      queryClient.setQueryData(["users"], context?.previousUsers);
+      queryClient.setQueryData(["users"], context?.previousUsers)
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: ["users"] })
     },
-  });
+  })
 
   const handleEnrollmentToggle = (
     userId: string,
@@ -116,38 +117,38 @@ export default function ManageUsers() {
     updateUserMutation.mutate({
       userId,
       data: { enrolled: !currentEnrollment },
-    });
-  };
+    })
+  }
 
   const handlePermissionChange = (userId: string, newPermission: string) => {
-    updateUserMutation.mutate({ userId, data: { permissions: newPermission } });
-  };
+    updateUserMutation.mutate({ userId, data: { permissions: newPermission } })
+  }
 
   const handleDateChange = (userId: string, newDate: Date) => {
-    updateUserMutation.mutate({ userId, data: { dateJoined: newDate } });
-  };
+    updateUserMutation.mutate({ userId, data: { dateJoined: newDate } })
+  }
 
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
       const response = await fetch(`/api/users/${userId}`, {
         method: "DELETE",
-      });
+      })
       if (!response.ok) {
-        throw new Error("Failed to delete user");
+        throw new Error("Failed to delete user")
       }
     },
     onSuccess: (_, userId) => {
       queryClient.setQueryData<User[]>(["users"], (old) =>
         old?.filter((user) => user.id !== userId)
-      );
+      )
     },
-  });
+  })
 
   const handleDeleteUser = (userId: string) => {
     if (window.confirm("Are you sure you want to delete this user?")) {
-      deleteUserMutation.mutate(userId);
+      deleteUserMutation.mutate(userId)
     }
-  };
+  }
 
   if (isLoading) {
     return (
@@ -161,6 +162,7 @@ export default function ManageUsers() {
             <TableHead>Enrollment</TableHead>
             <TableHead>Permissions</TableHead>
             <TableHead>View Profile</TableHead>
+            <TableHead>View Curriculum</TableHead>
             <TableHead>Date Joined</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
@@ -190,16 +192,19 @@ export default function ManageUsers() {
                 <Skeleton className="h-10 w-[120px]" />
               </TableCell>
               <TableCell>
+                <Skeleton className="h-10 w-[120px]" />
+              </TableCell>
+              <TableCell>
                 <Skeleton className="h-8 w-8 p-0" />
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
-    );
+    )
   }
 
-  if (error) return <div>Error: {(error as Error).message}</div>;
+  if (error) return <div>Error: {(error as Error).message}</div>
 
   return (
     <Table>
@@ -212,6 +217,7 @@ export default function ManageUsers() {
           <TableHead>Enrollment</TableHead>
           <TableHead>Permissions</TableHead>
           <TableHead>View Profile</TableHead>
+          <TableHead>View Curriculum</TableHead>
           <TableHead>Date Joined</TableHead>
           <TableHead>Actions</TableHead>
         </TableRow>
@@ -219,7 +225,7 @@ export default function ManageUsers() {
       <TableBody>
         {users && users.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={8}>No users found</TableCell>
+            <TableCell colSpan={9}>No users found</TableCell>
           </TableRow>
         ) : (
           users?.map((user) => (
@@ -304,6 +310,13 @@ export default function ManageUsers() {
                 </Button>
               </TableCell>
               <TableCell>
+                <Button variant="secondary" asChild>
+                  <Link href={`/dashboard/admin/users/${user.id}/curriculum`}>
+                    View Curriculum
+                  </Link>
+                </Button>
+              </TableCell>
+              <TableCell>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button variant="outline" className="w-[120px]">
@@ -343,5 +356,5 @@ export default function ManageUsers() {
         )}
       </TableBody>
     </Table>
-  );
+  )
 }

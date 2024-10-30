@@ -1,89 +1,69 @@
-import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
-import prisma from "@/app/utils/db";
-import { notFound } from "next/navigation";
-import dynamic from "next/dynamic";
-import { PartialBlock } from "@blocknote/core";
+import React from "react"
+import { notFound } from "next/navigation"
+import prisma from "@/app/utils/db"
+import dynamic from "next/dynamic"
+import { Button } from "@/components/ui/button"
+import { CustomVideoPlayer } from "@/features/video-player/VideoPlayer"
+import { Music, Type, Video } from "lucide-react"
 
-const BlockNoteEditorComponent = dynamic(
-  () =>
-    import("@/components/BlockNoteEditor").then(
-      (mod) => mod.BlockNoteEditorComponent
-    ),
-  { ssr: false }
-);
+const BlockNoteEditor = dynamic(() => import("@/components/BlockNoteEditor"), {
+  ssr: false,
+})
 
-async function getConcept(conceptId: string, userId: string) {
+export default async function ConceptEditorPage({
+  params,
+}: {
+  params: { courseId: string; sectionId: string; conceptId: string }
+}) {
   const concept = await prisma.concept.findUnique({
-    where: {
-      id: conceptId,
-      section: {
-        course: {
-          userId: userId,
-        },
-      },
-    },
+    where: { id: params.conceptId },
     include: {
       section: {
         select: {
-          id: true,
-          courseId: true,
+          title: true,
+          course: {
+            select: {
+              title: true,
+            },
+          },
         },
       },
     },
-  });
+  })
 
   if (!concept) {
-    notFound();
+    notFound()
   }
-
-  return concept;
-}
-
-function parseContent(content: string | null): PartialBlock[] {
-  if (!content) {
-    return [{ type: "paragraph", content: "" }];
-  }
-
-  try {
-    const parsedContent = JSON.parse(content);
-    if (Array.isArray(parsedContent) && parsedContent.length > 0) {
-      return parsedContent;
-    }
-  } catch (error) {
-    console.error("Error parsing concept content:", error);
-  }
-
-  // If parsing fails or content is not an array, return default content
-  return [{ type: "paragraph", content: content }];
-}
-
-export default async function ConceptPage({
-  params,
-}: {
-  params: { courseId: string; sectionId: string; conceptId: string };
-}) {
-  const { getUser } = getKindeServerSession();
-  const user = await getUser();
-
-  if (!user || !user.id) {
-    return <div>Unauthorized</div>;
-  }
-
-  const concept = await getConcept(params.conceptId, user.id);
-
-  const initialContent = parseContent(concept.content as string | null);
 
   return (
-    <div className="p-4 h-full">
-      <h1 className="text-2xl font-bold mb-4">{concept.title}</h1>
-      <div className="h-[calc(100vh-150px)] w-full border border-gray-300 rounded-lg overflow-hidden">
-        <BlockNoteEditorComponent
-          conceptId={concept.id}
-          sectionId={concept.section.id}
-          courseId={concept.section.courseId}
-          initialContent={initialContent}
-        />
+    <div className="container mx-auto p-4">
+      <div className="mb-6">
+        <div className="text-sm text-muted-foreground mb-2">
+          {concept.section.course.title} / {concept.section.title}
+        </div>
+        <h1 className="text-2xl font-bold mb-2">{concept.title}</h1>
+      </div>
+
+      {/* Insert Content Buttons */}
+      <div className="flex gap-4 mb-8">
+        <Button variant="outline" size="lg" className="flex items-center gap-2">
+          <Video className="h-5 w-5" />
+          Insert Video
+        </Button>
+        <Button variant="outline" size="lg" className="flex items-center gap-2">
+          <Music className="h-5 w-5" />
+          Insert Audio
+        </Button>
+        <Button variant="outline" size="lg" className="flex items-center gap-2">
+          <Type className="h-5 w-5" />
+          Insert Text
+        </Button>
+      </div>
+
+      {/* Content Area */}
+      <div className="space-y-8">
+        {/* Content blocks will be rendered here */}
       </div>
     </div>
-  );
+  )
 }
