@@ -1,76 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
 model User {
-  id            String       @id @unique
-  email         String       @unique
+  id            String           @id @unique
+  email         String           @unique
   firstName     String
   lastName      String
+  createdAt     DateTime         @default(now())
   profileImage  String?
-  enrolled      Boolean      @default(false)
-  permissions   String       @default("User")
   artistPageUrl String?
-  dateJoined    DateTime     @default(now())
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @default(now()) @updatedAt
+  dateJoined    DateTime         @default(now())
+  enrolled      Boolean          @default(false)
+  permissions   String           @default("User")
+  updatedAt     DateTime         @default(now()) @updatedAt
   courses       Course[]
+  enrollments   Enrollment[]
   projects      Project[]
   quizzes       Quiz[]
-  enrollments   Enrollment[]
+  curriculum    UserCurriculum[]
 }
 
 model Course {
-  id          String       @id @default(cuid())
+  id          String           @id @default(cuid())
   title       String
   description String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
   userId      String
-  sections    Section[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   enrollments Enrollment[]
+  sections    Section[]
+  curriculum  UserCurriculum[]
 }
 
 model Section {
   id          String    @id @default(cuid())
   title       String
   description String?
-  order       Int       @default(0)
   courseId    String
-  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  concepts    Concept[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  order       Int       @default(0)
+  concepts    Concept[]
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
 }
 
 model Concept {
-  id          String   @id @default(cuid())
+  id          String           @id @default(cuid())
   title       String
-  // BlockNote editor content - stores blocks array with formatting, media, and inline content
-  content     Json     @default("[]") // For storing BlockNote editor content
+  content     Json             @default("[]")
   videoUrl    String?
-  audioUrl    String?
   description String?
   imageUrl    String?
-  // Additional metadata for BlockNote content
-  blocks      Json?    @default("[]") // For storing additional block metadata
-  attachments Json?    @default("[]") // For storing file attachments
-  resources   Json?    @default("[]") // For storing external resources/links
-  metadata    Json?    @default("{\"version\":1,\"editorConfig\":{\"defaultStyles\":{},\"customStyles\":[]}}")
-  order       Int      @default(0)
   sectionId   String
-  section     Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  quiz        Quiz?    @relation(fields: [quizId], references: [id])
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
   quizId      String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  order       Int              @default(0)
+  attachments Json?            @default("[]")
+  audioUrl    String?
+  blocks      Json?            @default("[]")
+  metadata    Json?            @default("{\"version\": 1, \"editorConfig\": {\"customStyles\": [], \"defaultStyles\": {}}}")
+  resources   Json?            @default("[]")
+  quiz        Quiz?            @relation(fields: [quizId], references: [id])
+  section     Section          @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  curriculum  UserCurriculum[]
 }
 
 model Project {
@@ -78,9 +79,9 @@ model Project {
   title       String
   description String?
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Quiz {
@@ -88,19 +89,19 @@ model Quiz {
   title       String
   description String?
   userId      String
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  concepts    Concept[]
-  questions   Question[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+  concepts    Concept[]
+  questions   Question[]
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Question {
   id      String   @id @default(cuid())
   content String
   quizId  String
-  quiz    Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
   answers Answer[]
+  quiz    Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
 }
 
 model Answer {
@@ -116,8 +117,28 @@ model Enrollment {
   userId     String
   courseId   String
   enrolledAt DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, courseId])
+}
+
+model UserCurriculum {
+  id        String   @id @default(cuid())
+  userId    String
+  courseId  String
+  conceptId String
+  weekId    String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  concept Concept @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId, conceptId])
+  @@index([userId, courseId])
+  @@index([courseId])
+  @@index([conceptId])
 }

@@ -1,13 +1,14 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { KanbanBoard } from "@/components/kanban/kanban-board";
-import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { ConceptCard, KanbanSection } from "@/types/kanban";
+import { Button } from "@/components/ui/button";
+import { Type, ImageOff } from "lucide-react";
 
 export default function ManageSectionsPage({
   params,
@@ -15,6 +16,8 @@ export default function ManageSectionsPage({
   params: { courseId: string };
 }) {
   const queryClient = useQueryClient();
+  const [hideDescriptions, setHideDescriptions] = useState(false);
+  const [hideImages, setHideImages] = useState(false);
 
   // Fetch course details
   const { data: course } = useQuery({
@@ -362,10 +365,10 @@ export default function ManageSectionsPage({
 
       // Create an optimistic concept
       const optimisticConcept: ConceptCard = {
-        id: `temp-${Date.now()}`, // Temporary ID
+        id: `temp-${Date.now()}`,
         title: newData.title!,
-        description: newData.description,
-        imageUrl: newData.imageUrl,
+        description: newData.description ?? null,
+        imageUrl: newData.imageUrl ?? null,
         sectionId: newData.sectionId,
         order: newData.order ?? 0,
         content: "{}",
@@ -421,19 +424,56 @@ export default function ManageSectionsPage({
       </div>
 
       <div className="bg-muted/50 rounded-lg p-4">
-        <KanbanBoard
-          title="Course Sections"
-          description="Organize your course sections and concepts"
-          sections={sections ?? []}
-          cards={concepts ?? []}
-          isLoading={sectionsLoading || conceptsLoading}
-          onCreateSection={(data) => createSection.mutate(data)}
-          onUpdateSection={(data) => updateSection.mutate(data)}
-          onDeleteSection={(id) => deleteSection.mutate(id)}
-          onCreateCard={(data) => createConcept.mutate(data)}
-          onUpdateCard={(data) => updateConcept.mutate(data)}
-          onDeleteCard={(id) => deleteConcept.mutate(id)}
-        />
+        <div className="relative mb-4">
+          <div>
+            <h2 className="text-2xl font-bold">Course Sections</h2>
+            <p className="text-muted-foreground">
+              Organize your course sections and concepts
+            </p>
+          </div>
+
+          <div className="absolute top-0 right-0 flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setHideDescriptions(!hideDescriptions)}
+            >
+              <Type className="h-4 w-4 mr-2" />
+              {hideDescriptions ? "Show Descriptions" : "Hide Descriptions"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setHideImages(!hideImages)}
+            >
+              <ImageOff className="h-4 w-4 mr-2" />
+              {hideImages ? "Show Images" : "Hide Images"}
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1">
+          <div className="overflow-x-auto">
+            <div className="min-w-max">
+              <KanbanBoard
+                sections={sections ?? []}
+                cards={concepts ?? []}
+                isLoading={sectionsLoading || conceptsLoading}
+                sectionWidth="min-w-[250px]"
+                conceptMaxWidth="max-w-[400px]"
+                showConceptEditButtons={true}
+                showCardDescription={!hideDescriptions}
+                showCardImage={!hideImages}
+                onCreateSection={(data) => createSection.mutate(data)}
+                onUpdateSection={(data) => updateSection.mutate(data)}
+                onDeleteSection={(id) => deleteSection.mutate(id)}
+                onCreateCard={(data) => createConcept.mutate(data)}
+                onUpdateCard={(data) => updateConcept.mutate(data)}
+                onDeleteCard={(id) => deleteConcept.mutate(id)}
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -5,7 +5,7 @@ import { Course } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
@@ -39,6 +39,18 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ManageCourseUsers } from "./ManageCourseUsers";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import axios from "axios";
 
 interface ExtendedCourse extends Course {
   _count?: {
@@ -51,6 +63,7 @@ interface CourseListWrapperProps {
 }
 
 export function CourseListWrapper({ initialCourses }: CourseListWrapperProps) {
+  const queryClient = useQueryClient();
   const pathname = usePathname();
   const isAdminView = pathname.includes("/admin");
 
@@ -64,6 +77,15 @@ export function CourseListWrapper({ initialCourses }: CourseListWrapperProps) {
       return response.json();
     },
     initialData: initialCourses,
+  });
+
+  const deleteCourse = useMutation({
+    mutationFn: async (courseId: string) => {
+      await axios.delete(`/api/courses/${courseId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+    },
   });
 
   return (
@@ -102,9 +124,37 @@ export function CourseListWrapper({ initialCourses }: CourseListWrapperProps) {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="text-destructive">
-                    Delete Course
-                  </DropdownMenuItem>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <DropdownMenuItem
+                        className="text-destructive"
+                        onSelect={(e) => e.preventDefault()}
+                      >
+                        Delete Course
+                      </DropdownMenuItem>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          Are you absolutely sure?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently
+                          delete the course and all associated data including
+                          sections, concepts, and enrollments.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => deleteCourse.mutate(course.id)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

@@ -163,7 +163,9 @@ export function ManageCourseUsers({ courseId }: ManageCourseUsersProps) {
               </TableCell>
               <TableCell>
                 <Button variant="secondary" asChild>
-                  <Link href={`/dashboard/admin/users/${user.id}/curriculum`}>
+                  <Link
+                    href={`/dashboard/admin/manage-courses/${courseId}/users/${user.id}/curriculum`}
+                  >
                     <BookOpen className="h-4 w-4 mr-2" />
                     View Curriculum
                   </Link>

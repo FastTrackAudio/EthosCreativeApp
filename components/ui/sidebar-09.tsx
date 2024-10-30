@@ -43,6 +43,7 @@ import {
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import * as React from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -70,6 +71,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components";
 import type { KindeUser } from "@kinde-oss/kinde-auth-nextjs/dist/types";
 import Link from "next/link";
+import { isFeatureEnabled, getUserRoles } from "@/utils/featureFlags";
 
 // This is sample data
 const data = {
@@ -245,18 +247,7 @@ type SecondaryNavItems = {
 
 const secondaryNavItems: SecondaryNavItems = {
   "My Courses": [
-    { title: "All Courses", icon: BookOpen, url: "/dashboard/my-courses" },
-    {
-      title: "Create Course",
-      icon: PlusCircle,
-      url: "/dashboard/my-courses/create",
-    },
-    {
-      title: "Development Plan",
-      icon: FileText,
-      url: "/dashboard/my-courses/development-plan",
-    },
-    { title: "Next", icon: ArrowRight, url: "/dashboard/my-courses/next" },
+    { title: "My Courses", icon: BookOpen, url: "/dashboard/my-courses" },
   ],
   Projects: [
     { title: "Active", icon: Zap, url: "/dashboard/projects/active" },
@@ -416,6 +407,25 @@ export function AppSidebar({
   const pathname = usePathname();
   const { setOpen } = useSidebar();
 
+  // Fetch user permissions without logging
+  const { data: userPermissions } = useQuery({
+    queryKey: ["userPermissions"],
+    queryFn: async () => {
+      const response = await fetch("/api/users/permissions");
+      if (!response.ok) throw new Error("Failed to fetch user permissions");
+      const data = await response.json();
+      return data.permissions;
+    },
+  });
+
+  const userRoles = getUserRoles({ permissions: userPermissions });
+
+  // Filter nav items based on feature flags without logging
+  const filteredNavMain = data.navMain.filter((item) => {
+    const featureName = item.title.toUpperCase().replace(/\s+/g, "_");
+    return isFeatureEnabled(featureName, userRoles);
+  });
+
   const [activeItem, setActiveItem] = React.useState(() => {
     return (
       data.navMain.find((item) => pathname.startsWith(item.url)) ||
@@ -442,7 +452,7 @@ export function AppSidebar({
   }, [pathname]);
 
   if (!user) {
-    return null; // Or a sign-in prompt
+    return null;
   }
 
   return (
@@ -475,7 +485,7 @@ export function AppSidebar({
           <SidebarGroup>
             <SidebarGroupContent className="px-1.5 md:px-0">
               <SidebarMenu>
-                {data.navMain.map((item) => (
+                {filteredNavMain.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <Link href={item.url} passHref legacyBehavior>
                       <SidebarMenuButton
