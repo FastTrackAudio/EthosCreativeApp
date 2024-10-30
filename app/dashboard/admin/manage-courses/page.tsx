@@ -1,20 +1,20 @@
-import React from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { getAdminCourses } from "./page.server"
-import { CourseListWrapper } from "@/features/courses/CourseListWrapper"
-import { Input } from "@/components/ui/input"
-import { BookOpen, Plus, Search, SlidersHorizontal } from "lucide-react"
+import React from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { getAdminCourses } from "./page.server";
+import { CourseListWrapper } from "@/features/courses/CourseListWrapper";
+import { Input } from "@/components/ui/input";
+import { BookOpen, Plus, Search, SlidersHorizontal } from "lucide-react";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 
 export default async function ManageCourses() {
-  const initialCourses = await getAdminCourses()
+  const initialCourses = await getAdminCourses();
 
   return (
     <div className="p-6 space-y-6">
@@ -67,5 +67,5 @@ export default async function ManageCourses() {
 
       <CourseListWrapper initialCourses={initialCourses} />
     </div>
-  )
+  );
 }

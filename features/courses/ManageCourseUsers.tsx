@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import React from "react"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import React from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Table,
   TableBody,
@@ -9,93 +9,113 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Input } from "@/components/ui/input"
-import { Search } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { format } from "date-fns"
-import Link from "next/link"
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
+import { format } from "date-fns";
+import { BookOpen } from "lucide-react";
+import axios from "axios";
 
 interface User {
-  id: string
-  firstName: string
-  lastName: string
-  email: string
-  profileImage: string | null
-  enrolled: boolean
-  enrolledAt?: string
-  artistPageUrl: string | null
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  profileImage: string | null;
+  artistPageUrl: string | null;
+  enrollment: {
+    id: string;
+    enrolledAt: string;
+  } | null;
 }
 
 interface ManageCourseUsersProps {
-  courseId: string
+  courseId: string;
 }
 
 export function ManageCourseUsers({ courseId }: ManageCourseUsersProps) {
-  const [search, setSearch] = React.useState("")
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   const { data: users, isLoading } = useQuery<User[]>({
-    queryKey: ["course-users", courseId],
+    queryKey: ["courseUsers", courseId],
     queryFn: async () => {
-      const response = await fetch(`/api/courses/${courseId}/users`)
-      if (!response.ok) throw new Error("Failed to fetch users")
-      return response.json()
+      const response = await axios.get(`/api/courses/${courseId}/users`);
+      return response.data;
     },
-  })
+  });
 
   const toggleEnrollmentMutation = useMutation({
     mutationFn: async ({
       userId,
-      enrolled,
+      isEnrolled,
     }: {
-      userId: string
-      enrolled: boolean
+      userId: string;
+      isEnrolled: boolean;
     }) => {
-      const response = await fetch(`/api/courses/${courseId}/enrollments`, {
-        method: enrolled ? "POST" : "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
-      })
-      if (!response.ok) throw new Error("Failed to update enrollment")
-      return response.json()
+      if (!isEnrolled) {
+        await axios.post(`/api/courses/${courseId}/enrollments`, { userId });
+      } else {
+        await axios.delete(`/api/courses/${courseId}/enrollments`, {
+          data: { userId },
+        });
+      }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["course-users", courseId] })
-      queryClient.invalidateQueries({ queryKey: ["courses"] })
+    onMutate: async ({ userId, isEnrolled }) => {
+      await queryClient.cancelQueries({ queryKey: ["courseUsers", courseId] });
+      const previousUsers = queryClient.getQueryData<User[]>([
+        "courseUsers",
+        courseId,
+      ]);
+
+      if (previousUsers) {
+        queryClient.setQueryData<User[]>(
+          ["courseUsers", courseId],
+          previousUsers.map((user) => {
+            if (user.id === userId) {
+              return {
+                ...user,
+                enrollment: isEnrolled
+                  ? null
+                  : {
+                      id: "temp",
+                      enrolledAt: new Date().toISOString(),
+                    },
+              };
+            }
+            return user;
+          })
+        );
+      }
+
+      return { previousUsers };
     },
-  })
+    onError: (err, variables, context) => {
+      if (context?.previousUsers) {
+        queryClient.setQueryData(
+          ["courseUsers", courseId],
+          context.previousUsers
+        );
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["courseUsers", courseId] });
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+    },
+  });
 
-  const filteredUsers = users?.filter((user) =>
-    `${user.firstName} ${user.lastName} ${user.email}`
-      .toLowerCase()
-      .includes(search.toLowerCase())
-  )
-
-  if (isLoading) {
-    return <div>Loading...</div>
-  }
+  if (isLoading) return <div>Loading...</div>;
 
   return (
-    <div className="space-y-4 max-w-5xl mx-auto">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-        <Input
-          placeholder="Search users..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-10"
-        />
-      </div>
-
+    <div className="rounded-md border max-w-full overflow-x-auto p-20">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>User</TableHead>
+            <TableHead>Avatar</TableHead>
+            <TableHead>Name</TableHead>
             <TableHead>Email</TableHead>
-            <TableHead>Enrollment Date</TableHead>
+            <TableHead>Enrolled Date</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Profile</TableHead>
             <TableHead>Curriculum</TableHead>
@@ -103,29 +123,29 @@ export function ManageCourseUsers({ courseId }: ManageCourseUsersProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredUsers?.map((user) => (
+          {users?.map((user) => (
             <TableRow key={user.id}>
-              <TableCell className="flex items-center gap-2">
-                <Avatar className="h-8 w-8">
+              <TableCell>
+                <Avatar>
                   <AvatarImage src={user.profileImage || undefined} />
                   <AvatarFallback>
                     {user.firstName[0]}
                     {user.lastName[0]}
                   </AvatarFallback>
                 </Avatar>
-                <span>
-                  {user.firstName} {user.lastName}
-                </span>
+              </TableCell>
+              <TableCell>
+                {user.firstName} {user.lastName}
               </TableCell>
               <TableCell>{user.email}</TableCell>
               <TableCell>
-                {user.enrolledAt
-                  ? format(new Date(user.enrolledAt), "MM/dd/yyyy")
+                {user.enrollment?.enrolledAt
+                  ? format(new Date(user.enrollment.enrolledAt), "MM/dd/yyyy")
                   : "Not enrolled"}
               </TableCell>
               <TableCell>
-                {user.enrolled ? (
-                  <Badge variant="default">Enrolled</Badge>
+                {user.enrollment ? (
+                  <Badge>Enrolled</Badge>
                 ) : (
                   <Badge variant="secondary">Not Enrolled</Badge>
                 )}
@@ -144,22 +164,23 @@ export function ManageCourseUsers({ courseId }: ManageCourseUsersProps) {
               <TableCell>
                 <Button variant="secondary" asChild>
                   <Link href={`/dashboard/admin/users/${user.id}/curriculum`}>
+                    <BookOpen className="h-4 w-4 mr-2" />
                     View Curriculum
                   </Link>
                 </Button>
               </TableCell>
               <TableCell>
                 <Button
-                  variant={user.enrolled ? "destructive" : "default"}
+                  variant={user.enrollment ? "destructive" : "default"}
                   onClick={() =>
                     toggleEnrollmentMutation.mutate({
                       userId: user.id,
-                      enrolled: !user.enrolled,
+                      isEnrolled: !!user.enrollment,
                     })
                   }
                   disabled={toggleEnrollmentMutation.isPending}
                 >
-                  {user.enrolled ? "Remove" : "Enroll"}
+                  {user.enrollment ? "Remove" : "Enroll"}
                 </Button>
               </TableCell>
             </TableRow>
@@ -167,5 +188,5 @@ export function ManageCourseUsers({ courseId }: ManageCourseUsersProps) {
         </TableBody>
       </Table>
     </div>
-  )
+  );
 }

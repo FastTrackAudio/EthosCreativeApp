@@ -1,9 +1,9 @@
-import React from "react"
-import { getUserCourses } from "./page.server"
-import { StudentCourseListWrapper } from "@/features/courses/StudentCourseListWrapper"
+import React from "react";
+import { getUserCourses } from "./page.server";
+import { StudentCourseListWrapper } from "@/features/courses/StudentCourseListWrapper";
 
 export default async function MyCourses() {
-  const initialCourses = await getUserCourses()
+  const initialCourses = await getUserCourses();
 
   return (
     <div className="p-6 space-y-6">
@@ -15,5 +15,5 @@ export default async function MyCourses() {
       </div>
       <StudentCourseListWrapper initialCourses={initialCourses} />
     </div>
-  )
+  );
 }

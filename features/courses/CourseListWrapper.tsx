@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import React from "react"
-import { Course } from "@prisma/client"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { useQuery } from "@tanstack/react-query"
+import React from "react";
+import { Course } from "@prisma/client";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
@@ -13,8 +13,8 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   MoreVertical,
   Users,
@@ -22,14 +22,14 @@ import {
   Calendar,
   ArrowUpRight,
   UserPlus,
-} from "lucide-react"
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -37,34 +37,34 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { ManageCourseUsers } from "./ManageCourseUsers"
+} from "@/components/ui/dialog";
+import { ManageCourseUsers } from "./ManageCourseUsers";
 
 interface ExtendedCourse extends Course {
   _count?: {
-    enrollments: number
-  }
+    enrollments: number;
+  };
 }
 
 interface CourseListWrapperProps {
-  initialCourses: ExtendedCourse[]
+  initialCourses: ExtendedCourse[];
 }
 
 export function CourseListWrapper({ initialCourses }: CourseListWrapperProps) {
-  const pathname = usePathname()
-  const isAdminView = pathname.includes("/admin")
+  const pathname = usePathname();
+  const isAdminView = pathname.includes("/admin");
 
   const { data: courses } = useQuery({
     queryKey: ["courses"],
     queryFn: async () => {
       const response = await fetch(
         isAdminView ? "/api/courses/admin" : "/api/courses"
-      )
-      if (!response.ok) throw new Error("Failed to fetch courses")
-      return response.json()
+      );
+      if (!response.ok) throw new Error("Failed to fetch courses");
+      return response.json();
     },
     initialData: initialCourses,
-  })
+  });
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -117,16 +117,14 @@ export function CourseListWrapper({ initialCourses }: CourseListWrapperProps) {
                   {course._count?.enrollments || 0} Students
                 </span>
                 <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="ghost" size="icon" className="ml-2">
-                      <UserPlus className="h-4 w-4" />
-                    </Button>
+                  <DialogTrigger>
+                    <UserPlus className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
                   </DialogTrigger>
-                  <DialogContent className="max-w-[90vw] w-[1200px] max-h-[80vh] overflow-y-auto">
+                  <DialogContent className="max-w-screen w-full max-h-[95vh] overflow-y-auto">
                     <DialogHeader>
-                      <DialogTitle>Manage Course Students</DialogTitle>
+                      <DialogTitle>Manage Course Users</DialogTitle>
                       <DialogDescription>
-                        Manage student enrollments for {course.title}
+                        Add or remove users from this course
                       </DialogDescription>
                     </DialogHeader>
                     <ManageCourseUsers courseId={course.id} />
@@ -150,19 +148,40 @@ export function CourseListWrapper({ initialCourses }: CourseListWrapperProps) {
               </div>
             </div>
           </CardContent>
-          <CardFooter className="pt-6">
-            <Button asChild className="w-full">
+          <CardFooter className="flex flex-col sm:flex-row gap-2">
+            {isAdminView && (
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="w-full sm:w-auto">
+                    <UserPlus className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-screen w-full max-h-[95vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Manage Course Users</DialogTitle>
+                    <DialogDescription>
+                      Add or remove users from this course
+                    </DialogDescription>
+                  </DialogHeader>
+                  <ManageCourseUsers courseId={course.id} />
+                </DialogContent>
+              </Dialog>
+            )}
+            <Button asChild className="w-full sm:flex-1 lg:w-auto">
               <Link
-                href={`/dashboard/admin/manage-courses/${course.id}`}
-                className="flex items-center gap-2"
+                href={
+                  isAdminView
+                    ? `/dashboard/admin/manage-courses/${course.id}/manage-sections`
+                    : `/dashboard/my-courses/${course.id}`
+                }
               >
-                Manage Course
-                <ArrowUpRight className="h-4 w-4" />
+                {isAdminView ? "Manage Course" : "View Course"}
+                <ArrowUpRight className="h-4 w-4 ml-2" />
               </Link>
             </Button>
           </CardFooter>
         </Card>
       ))}
     </div>
-  )
+  );
 }

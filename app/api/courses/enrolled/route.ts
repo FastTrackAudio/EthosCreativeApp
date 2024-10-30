@@ -1,17 +1,17 @@
-import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server"
-import { NextResponse } from "next/server"
-import prisma from "@/app/utils/db"
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
+import prisma from "@/app/utils/db";
+import { NextResponse } from "next/server";
 
 export async function GET() {
+  const { getUser } = getKindeServerSession();
+  const user = await getUser();
+
+  if (!user?.id) {
+    return new NextResponse("Unauthorized", { status: 401 });
+  }
+
   try {
-    const { getUser } = getKindeServerSession()
-    const user = await getUser()
-
-    if (!user || !user.id) {
-      return new NextResponse("Unauthorized", { status: 401 })
-    }
-
-    const enrolledCourses = await prisma.courseEnrollment.findMany({
+    const enrolledCourses = await prisma.enrollment.findMany({
       where: {
         userId: user.id,
       },
@@ -27,19 +27,16 @@ export async function GET() {
                 },
               },
             },
-            _count: {
-              select: {
-                enrollments: true,
-              },
-            },
+            enrollments: true,
           },
         },
       },
       orderBy: {
         enrolledAt: "desc",
       },
-    })
+    });
 
+    // Transform the data to match the expected format
     const transformedCourses = enrolledCourses.map((enrollment) => ({
       id: enrollment.course.id,
       title: enrollment.course.title,
@@ -49,15 +46,15 @@ export async function GET() {
       updatedAt: enrollment.course.updatedAt.toISOString(),
       sectionCount: enrollment.course.sections.length,
       conceptCount: enrollment.course.sections.reduce(
-        (acc, section) => acc + section._count.concepts,
+        (acc: number, section: any) => acc + (section._count?.concepts || 0),
         0
       ),
-      studentCount: enrollment.course._count.enrollments,
-    }))
+      studentCount: enrollment.course.enrollments.length,
+    }));
 
-    return NextResponse.json(transformedCourses)
+    return NextResponse.json(transformedCourses);
   } catch (error) {
-    console.error("[ENROLLED_COURSES_GET]", error)
-    return new NextResponse("Internal Error", { status: 500 })
+    console.error("[ENROLLED_COURSES_GET]", error);
+    return new NextResponse("Internal Error", { status: 500 });
   }
 }
