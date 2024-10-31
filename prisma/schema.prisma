@@ -126,16 +126,15 @@ model Enrollment {
 model UserCurriculum {
   id        String   @id @default(cuid())
   userId    String
-  courseId  String
   conceptId String
-  weekId    String
-  order     Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  concept Concept @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+  courseId  String
+  order     Int      @default(0)
+  weekId    String
+  concept   Concept  @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, courseId, conceptId])
   @@index([userId, courseId])

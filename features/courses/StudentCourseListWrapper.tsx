@@ -1,9 +1,9 @@
-"use client";
+"use client"
 
-import React from "react";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import React from "react"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
+import { useQuery } from "@tanstack/react-query"
 import {
   Card,
   CardContent,
@@ -11,7 +11,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/card"
 import {
   BookOpen,
   Calendar,
@@ -19,23 +19,24 @@ import {
   Users,
   ArrowRight,
   BookOpenCheck,
-} from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+} from "lucide-react"
+import { Progress } from "@/components/ui/progress"
+import { format } from "date-fns"
 
 interface EnrolledCourse {
-  id: string;
-  title: string;
-  description: string | null;
-  enrolledAt: string;
-  createdAt: string;
-  updatedAt: string;
-  sectionCount: number;
-  conceptCount: number;
-  studentCount: number;
+  id: string
+  title: string
+  description: string | null
+  enrolledAt: string
+  createdAt: string
+  updatedAt: string
+  sectionCount: number
+  conceptCount: number
+  studentCount: number
 }
 
 interface StudentCourseListWrapperProps {
-  initialCourses: EnrolledCourse[];
+  initialCourses: EnrolledCourse[]
 }
 
 export function StudentCourseListWrapper({
@@ -44,12 +45,12 @@ export function StudentCourseListWrapper({
   const { data: courses } = useQuery({
     queryKey: ["enrolled-courses"],
     queryFn: async () => {
-      const response = await fetch("/api/courses/enrolled");
-      if (!response.ok) throw new Error("Failed to fetch courses");
-      return response.json();
+      const response = await fetch("/api/courses/enrolled")
+      if (!response.ok) throw new Error("Failed to fetch courses")
+      return response.json()
     },
     initialData: initialCourses,
-  });
+  })
 
   if (!courses.length) {
     return (
@@ -62,7 +63,7 @@ export function StudentCourseListWrapper({
           <Link href="/dashboard/courses/explore">Explore Courses</Link>
         </Button>
       </div>
-    );
+    )
   }
 
   return (
@@ -97,7 +98,7 @@ export function StudentCourseListWrapper({
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    Enrolled {new Date(course.enrolledAt).toLocaleDateString()}
+                    {format(new Date(course.enrolledAt), "MM/dd/yyyy")}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -130,5 +131,5 @@ export function StudentCourseListWrapper({
         </Card>
       ))}
     </div>
-  );
+  )
 }
