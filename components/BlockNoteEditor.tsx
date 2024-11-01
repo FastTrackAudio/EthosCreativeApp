@@ -1,101 +1,150 @@
 "use client"
 
-import { useEffect, useState, useRef, useMemo } from "react"
+import { useEffect, useRef, useMemo } from "react"
 import { BlockNoteEditor, PartialBlock } from "@blocknote/core"
 import "@blocknote/core/fonts/inter.css"
 import { useCreateBlockNote } from "@blocknote/react"
 import { BlockNoteView } from "@blocknote/mantine"
 import "@blocknote/mantine/style.css"
 import { useTheme } from "next-themes"
+import { cn } from "@/lib/utils"
 
-interface BlockNoteEditorProps {
+interface BlockNoteEditorComponentProps {
   conceptId: string
   initialContent: string | null
   onUpdate?: (content: string) => void
   isTransparent?: boolean
+  editorMode?: boolean
 }
 
-const defaultBlock: PartialBlock[] = [
-  {
-    type: "paragraph",
-    content: "Start writing here...",
-  },
-]
-
 export function BlockNoteEditorComponent({
-  conceptId,
   initialContent,
   onUpdate,
   isTransparent,
-}: BlockNoteEditorProps) {
+  editorMode = true,
+}: BlockNoteEditorComponentProps) {
   const { resolvedTheme } = useTheme()
   const editorRef = useRef<BlockNoteEditor | null>(null)
 
-  // Parse initial content or use default
+  // Parse the initial content with default empty block
   const parsedContent = useMemo(() => {
-    if (!initialContent) return defaultBlock
-
     try {
-      if (
-        typeof initialContent === "string" &&
-        initialContent.startsWith("[")
-      ) {
-        const parsed = JSON.parse(initialContent)
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed
-        }
+      if (!initialContent) {
+        return [
+          {
+            id: "1",
+            type: "paragraph",
+            content: [],
+            props: {
+              textColor: "default",
+              backgroundColor: "default",
+              textAlignment: "left",
+            },
+          },
+        ]
       }
 
+      const content =
+        typeof initialContent === "string"
+          ? JSON.parse(initialContent)
+          : initialContent
+
+      // If content is empty or invalid, return default block
+      if (!Array.isArray(content) || content.length === 0) {
+        return [
+          {
+            id: "1",
+            type: "paragraph",
+            content: [],
+            props: {
+              textColor: "default",
+              backgroundColor: "default",
+              textAlignment: "left",
+            },
+          },
+        ]
+      }
+
+      return content
+    } catch (error) {
+      console.error("Error parsing content:", error)
+      // Return default block on error
       return [
         {
+          id: "1",
           type: "paragraph",
-          content: initialContent,
-        },
-      ]
-    } catch {
-      return [
-        {
-          type: "paragraph",
-          content: initialContent,
+          content: [],
+          props: {
+            textColor: "default",
+            backgroundColor: "default",
+            textAlignment: "left",
+          },
         },
       ]
     }
   }, [initialContent])
 
+  // Create editor with appropriate configuration
   const editor = useCreateBlockNote({
     initialContent: parsedContent,
+    domAttributes: {
+      editor: {
+        class: cn(
+          "p-4",
+          isTransparent && "bg-transparent [&_.bn-container]:bg-transparent"
+        ),
+      },
+    },
+    // Configure editor features based on mode
+    sideMenu: editorMode, // Only show side menu in editor mode
+    slashMenu: editorMode, // Only show slash menu in editor mode
+    defaultStyles: true,
   })
 
+  // Set editor editability
+  useEffect(() => {
+    if (editor) {
+      editor.isEditable = editorMode
+    }
+  }, [editor, editorMode])
+
+  // Set up editor ref for saving
   useEffect(() => {
     editorRef.current = editor
   }, [editor])
 
-  // Content change handler without auto-save
+  // Handle content changes in editor mode
   useEffect(() => {
+    if (!editorRef.current || !onUpdate || !editorMode) return
+
+    const saveContent = () => {
+      const blocks = editorRef.current?.topLevelBlocks
+      if (blocks) {
+        onUpdate(JSON.stringify(blocks))
+      }
+    }
+
     const handleChange = () => {
-      if (!editorRef.current || !onUpdate) return
-      const content = JSON.stringify(editorRef.current.topLevelBlocks)
-      onUpdate(content)
+      saveContent()
     }
 
     editor.onEditorContentChange(handleChange)
 
     return () => {
-      editor.onEditorContentChange(() => {})
+      editor.onEditorContentChange(() => {}) // Remove listener
     }
-  }, [editor, onUpdate])
-
-  if (!editor) {
-    return <div>Loading editor...</div>
-  }
+  }, [editor, onUpdate, editorMode])
 
   return (
-    <div className="h-full relative">
+    <div
+      className={cn(
+        "rounded-lg border bg-background",
+        isTransparent && "border-none bg-transparent"
+      )}
+    >
       <BlockNoteView
         editor={editor}
         theme={resolvedTheme === "dark" ? "dark" : "light"}
-        className={isTransparent ? "bg-transparent" : ""}
-        data-transparent={isTransparent}
       />
     </div>
   )

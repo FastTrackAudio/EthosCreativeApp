@@ -2,12 +2,10 @@ import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server"
 import { NextResponse } from "next/server"
 import prisma from "@/app/utils/db"
 
-// DELETE - Remove concept from curriculum
-export async function DELETE(
+// POST - Create new week
+export async function POST(
   req: Request,
-  {
-    params,
-  }: { params: { courseId: string; userId: string; conceptId: string } }
+  { params }: { params: { courseId: string; userId: string } }
 ) {
   try {
     const { getUser } = getKindeServerSession()
@@ -17,17 +15,12 @@ export async function DELETE(
       return new NextResponse("Unauthorized", { status: 401 })
     }
 
-    await prisma.userCurriculum.deleteMany({
-      where: {
-        userId: params.userId,
-        courseId: params.courseId,
-        conceptId: params.conceptId,
-      },
-    })
+    const { weekId } = await req.json()
 
-    return new NextResponse(null, { status: 204 })
+    // No need to create a week record - weeks are just identifiers in UserCurriculum
+    return NextResponse.json({ weekId })
   } catch (error) {
-    console.error("[CURRICULUM_DELETE]", error)
+    console.error("[WEEK_POST]", error)
     return new NextResponse("Internal Error", { status: 500 })
   }
 }

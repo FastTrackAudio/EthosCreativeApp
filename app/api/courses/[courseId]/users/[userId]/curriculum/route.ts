@@ -1,55 +1,78 @@
-import { NextResponse } from "next/server";
-import prisma from "@/app/utils/db";
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server"
+import { NextResponse } from "next/server"
+import prisma from "@/app/utils/db"
 
+// GET - Fetch curriculum
 export async function GET(
   req: Request,
   { params }: { params: { courseId: string; userId: string } }
 ) {
   try {
+    const { getUser } = getKindeServerSession()
+    const user = await getUser()
+
+    if (!user || !user.id) {
+      return new NextResponse("Unauthorized", { status: 401 })
+    }
+
     const curriculum = await prisma.userCurriculum.findMany({
       where: {
         userId: params.userId,
         courseId: params.courseId,
       },
       include: {
-        concept: true,
+        concept: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            sectionId: true,
+          },
+        },
       },
       orderBy: {
         order: "asc",
       },
-    });
+    })
 
-    return NextResponse.json({ weeks: curriculum });
+    return NextResponse.json(curriculum)
   } catch (error) {
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    console.error("[CURRICULUM_GET]", error)
+    return new NextResponse("Internal Error", { status: 500 })
   }
 }
 
+// POST - Add concept to curriculum
 export async function POST(
   req: Request,
   { params }: { params: { courseId: string; userId: string } }
 ) {
   try {
-    const { conceptId, weekId, order } = await req.json();
+    const { getUser } = getKindeServerSession()
+    const user = await getUser()
 
-    const curriculum = await prisma.userCurriculum.create({
+    if (!user || !user.id) {
+      return new NextResponse("Unauthorized", { status: 401 })
+    }
+
+    const { conceptId, weekId, order } = await req.json()
+
+    const curriculumItem = await prisma.userCurriculum.create({
       data: {
         userId: params.userId,
         courseId: params.courseId,
-        conceptId,
-        weekId,
-        order,
+        conceptId: conceptId,
+        weekId: weekId,
+        order: order,
       },
-    });
+      include: {
+        concept: true,
+      },
+    })
 
-    return NextResponse.json(curriculum);
+    return NextResponse.json(curriculumItem)
   } catch (error) {
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    console.error("[CURRICULUM_POST]", error)
+    return new NextResponse("Internal Error", { status: 500 })
   }
 }

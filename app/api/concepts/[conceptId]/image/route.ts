@@ -2,12 +2,9 @@ import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server"
 import { NextResponse } from "next/server"
 import prisma from "@/app/utils/db"
 
-// DELETE - Remove concept from curriculum
-export async function DELETE(
+export async function PATCH(
   req: Request,
-  {
-    params,
-  }: { params: { courseId: string; userId: string; conceptId: string } }
+  { params }: { params: { conceptId: string } }
 ) {
   try {
     const { getUser } = getKindeServerSession()
@@ -17,17 +14,16 @@ export async function DELETE(
       return new NextResponse("Unauthorized", { status: 401 })
     }
 
-    await prisma.userCurriculum.deleteMany({
-      where: {
-        userId: params.userId,
-        courseId: params.courseId,
-        conceptId: params.conceptId,
-      },
+    const { imageUrl } = await req.json()
+
+    const concept = await prisma.concept.update({
+      where: { id: params.conceptId },
+      data: { imageUrl },
     })
 
-    return new NextResponse(null, { status: 204 })
+    return NextResponse.json(concept)
   } catch (error) {
-    console.error("[CURRICULUM_DELETE]", error)
+    console.error("[CONCEPT_IMAGE_UPDATE]", error)
     return new NextResponse("Internal Error", { status: 500 })
   }
 }

@@ -1,13 +1,40 @@
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server"
 import prisma from "@/app/utils/db"
-import { notFound } from "next/navigation"
-import { KanbanBoard } from "../../../../components/kanban-board/KanbanBoard"
+import { notFound, redirect } from "next/navigation"
+import { EnrolledCourseView } from "@/components/courses/enrolled-course-view"
+import { completeConceptAction } from "@/app/actions/complete-concept"
 
-async function getCourse(courseId: string, userId: string) {
-  const course = await prisma.course.findUnique({
+async function getCourseData(courseId: string, userId: string) {
+  const course = await prisma.course.findFirst({
     where: {
       id: courseId,
-      userId: userId,
+      enrollments: {
+        some: {
+          userId,
+        },
+      },
+    },
+    include: {
+      sections: {
+        orderBy: {
+          order: "asc",
+        },
+        include: {
+          concepts: {
+            orderBy: {
+              order: "asc",
+            },
+            include: {
+              curriculum: {
+                where: {
+                  userId,
+                  courseId,
+                },
+              },
+            },
+          },
+        },
+      },
     },
   })
 
@@ -15,10 +42,36 @@ async function getCourse(courseId: string, userId: string) {
     notFound()
   }
 
-  return course
+  // Transform data for the UI
+  const sections = course.sections.map((section) => ({
+    id: section.id,
+    title: section.title,
+    description: section.description,
+    concepts: section.concepts.map((concept) => {
+      // Check if this concept has a curriculum entry for this user and course
+      const isCompleted = concept.curriculum.some(
+        (curr) => curr.userId === userId && curr.courseId === courseId
+      )
+
+      return {
+        id: concept.id,
+        title: concept.title,
+        description: concept.description,
+        imageUrl: concept.imageUrl,
+        completed: isCompleted,
+      }
+    }),
+  }))
+
+  return {
+    courseId,
+    courseTitle: course.title,
+    courseDescription: course.description,
+    sections,
+  }
 }
 
-export default async function CourseCreatePage({
+export default async function EnrolledCoursePage({
   params,
 }: {
   params: { courseId: string }
@@ -26,17 +79,17 @@ export default async function CourseCreatePage({
   const { getUser } = getKindeServerSession()
   const user = await getUser()
 
-  if (!user || !user.id) {
-    return <div>Unauthorized</div>
+  if (!user) {
+    redirect("/auth/login")
   }
 
-  const course = await getCourse(params.courseId, user.id)
+  const courseData = await getCourseData(params.courseId, user.id)
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">{course.title}</h1>
-      <p className="mb-4">{course.description}</p>
-      <KanbanBoard courseId={course.id} />
-    </div>
+    <EnrolledCourseView
+      courseId={params.courseId}
+      {...courseData}
+      onCompleteAction={completeConceptAction}
+    />
   )
 }

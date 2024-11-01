@@ -1,25 +1,33 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { KanbanBoard } from "@/components/kanban/kanban-board";
-import { CurriculumWeeks } from "@/components/curriculum/curriculum-weeks";
-import axios from "axios";
-import { ConceptCard, KanbanSection, DragEndResult } from "@/types/kanban";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
-import { DragDropContext } from "@hello-pangea/dnd";
+import { useState } from "react"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { KanbanBoard } from "@/components/kanban/kanban-board"
+import { CurriculumWeeks } from "@/components/curriculum/curriculum-weeks"
+import axios from "axios"
+import { ConceptCard, KanbanSection, DragEndResult } from "@/types/kanban"
+import { ArrowLeft } from "lucide-react"
+import Link from "next/link"
+import { DragDropContext } from "@hello-pangea/dnd"
+import { toast } from "react-toastify"
 
 interface PageProps {
   params: {
-    courseId: string;
-    userId: string;
-  };
+    courseId: string
+    userId: string
+  }
+}
+
+interface CurriculumData {
+  weeks: Array<{
+    weekId: string
+    concepts: ConceptCard[]
+  }>
 }
 
 export default function ManageUserCurriculumPage({ params }: PageProps) {
-  const queryClient = useQueryClient();
-  const [selectedWeek, setSelectedWeek] = useState<string | null>(null);
+  const queryClient = useQueryClient()
+  const [selectedWeek, setSelectedWeek] = useState<string | null>(null)
 
   // Fetch sections and concepts
   const { data: sections, isLoading: sectionsLoading } = useQuery<
@@ -29,10 +37,10 @@ export default function ManageUserCurriculumPage({ params }: PageProps) {
     queryFn: async () => {
       const response = await axios.get(
         `/api/courses/${params.courseId}/sections`
-      );
-      return response.data;
+      )
+      return response.data
     },
-  });
+  })
 
   const { data: concepts, isLoading: conceptsLoading } = useQuery<
     ConceptCard[]
@@ -41,20 +49,40 @@ export default function ManageUserCurriculumPage({ params }: PageProps) {
     queryFn: async () => {
       const response = await axios.get(
         `/api/courses/${params.courseId}/concepts`
-      );
-      return response.data;
+      )
+      return response.data
     },
-  });
+  })
 
   const { data: curriculum, isLoading: curriculumLoading } = useQuery({
     queryKey: ["curriculum", params.courseId, params.userId],
     queryFn: async () => {
       const response = await axios.get(
         `/api/courses/${params.courseId}/users/${params.userId}/curriculum`
-      );
-      return response.data;
+      )
+
+      // Transform the data into the expected format
+      const groupedByWeek = response.data.reduce((acc: any, item: any) => {
+        if (!acc[item.weekId]) {
+          acc[item.weekId] = {
+            weekId: item.weekId,
+            concepts: [],
+          }
+        }
+        acc[item.weekId].concepts.push({
+          id: item.conceptId,
+          title: item.concept.title,
+          description: item.concept.description,
+          sectionId: item.concept.sectionId,
+        })
+        return acc
+      }, {})
+
+      return {
+        weeks: Object.values(groupedByWeek),
+      }
     },
-  });
+  })
 
   const addToCurriculumMutation = useMutation({
     mutationFn: async ({
@@ -62,75 +90,260 @@ export default function ManageUserCurriculumPage({ params }: PageProps) {
       weekId,
       order,
     }: {
-      conceptId: string;
-      weekId: string;
-      order: number;
+      conceptId: string
+      weekId: string
+      order: number
     }) => {
-      await axios.post(
+      const response = await axios.post(
         `/api/courses/${params.courseId}/users/${params.userId}/curriculum`,
-        {
-          conceptId,
-          weekId,
-          order,
-        }
-      );
+        { conceptId, weekId, order }
+      )
+      return response.data
+    },
+    onMutate: async ({ conceptId, weekId, order }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({
+        queryKey: ["curriculum", params.courseId, params.userId],
+      })
+
+      // Get current curriculum data
+      const previousCurriculum = queryClient.getQueryData<CurriculumData>([
+        "curriculum",
+        params.courseId,
+        params.userId,
+      ])
+
+      // Find the concept from the concepts query
+      const concept = queryClient
+        .getQueryData<ConceptCard[]>(["concepts", params.courseId])
+        ?.find((c) => c.id === conceptId)
+
+      if (concept) {
+        // Optimistically update curriculum
+        queryClient.setQueryData<CurriculumData>(
+          ["curriculum", params.courseId, params.userId],
+          (old) => {
+            if (!old) return { weeks: [] }
+
+            const newWeeks = [...old.weeks]
+            const weekIndex = newWeeks.findIndex((w) => w.weekId === weekId)
+
+            if (weekIndex === -1) {
+              newWeeks.push({ weekId, concepts: [concept] })
+            } else {
+              newWeeks[weekIndex].concepts.splice(order, 0, concept)
+            }
+
+            return { weeks: newWeeks }
+          }
+        )
+      }
+
+      return { previousCurriculum }
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousCurriculum) {
+        queryClient.setQueryData(
+          ["curriculum", params.courseId, params.userId],
+          context.previousCurriculum
+        )
+      }
+      toast.error("Failed to add to curriculum")
     },
     onSuccess: () => {
+      toast.success("Added to curriculum")
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: ["curriculum", params.courseId, params.userId],
-      });
+      })
     },
-  });
+  })
 
   const removeFromCurriculumMutation = useMutation({
     mutationFn: async (conceptId: string) => {
       await axios.delete(
         `/api/courses/${params.courseId}/users/${params.userId}/curriculum/${conceptId}`
-      );
+      )
+    },
+    onMutate: async (conceptId) => {
+      await queryClient.cancelQueries({
+        queryKey: ["curriculum", params.courseId, params.userId],
+      })
+
+      const previousCurriculum = queryClient.getQueryData<CurriculumData>([
+        "curriculum",
+        params.courseId,
+        params.userId,
+      ])
+
+      queryClient.setQueryData<CurriculumData>(
+        ["curriculum", params.courseId, params.userId],
+        (old) => {
+          if (!old) return { weeks: [] }
+
+          return {
+            weeks: old.weeks.map((week) => ({
+              ...week,
+              concepts: week.concepts.filter((c) => c.id !== conceptId),
+            })),
+          }
+        }
+      )
+
+      return { previousCurriculum }
+    },
+    onError: (err, conceptId, context) => {
+      if (context?.previousCurriculum) {
+        queryClient.setQueryData(
+          ["curriculum", params.courseId, params.userId],
+          context.previousCurriculum
+        )
+      }
+      toast.error("Failed to remove from curriculum")
+    },
+    onSuccess: () => {
+      toast.success("Removed from curriculum")
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["curriculum", params.courseId, params.userId],
+      })
+    },
+  })
+
+  const addWeekMutation = useMutation({
+    mutationFn: async (weekId: string) => {
+      await axios.post(
+        `/api/courses/${params.courseId}/users/${params.userId}/curriculum/weeks`,
+        {
+          weekId,
+        }
+      )
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["curriculum", params.courseId, params.userId],
-      });
+      })
     },
-  });
+  })
+
+  const reorderConceptsMutation = useMutation({
+    mutationFn: async ({
+      weekId,
+      concepts,
+    }: {
+      weekId: string
+      concepts: ConceptCard[]
+    }) => {
+      await axios.patch(
+        `/api/courses/${params.courseId}/users/${params.userId}/curriculum/weeks/${weekId}/reorder`,
+        {
+          concepts: concepts.map((concept, index) => ({
+            conceptId: concept.id,
+            order: index,
+          })),
+        }
+      )
+    },
+    onMutate: async ({ weekId, concepts }) => {
+      await queryClient.cancelQueries({
+        queryKey: ["curriculum", params.courseId, params.userId],
+      })
+
+      const previousCurriculum = queryClient.getQueryData<CurriculumData>([
+        "curriculum",
+        params.courseId,
+        params.userId,
+      ])
+
+      queryClient.setQueryData<CurriculumData>(
+        ["curriculum", params.courseId, params.userId],
+        (old) => {
+          if (!old) return { weeks: [] }
+
+          return {
+            weeks: old.weeks.map((week) =>
+              week.weekId === weekId ? { ...week, concepts } : week
+            ),
+          }
+        }
+      )
+
+      return { previousCurriculum }
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousCurriculum) {
+        queryClient.setQueryData(
+          ["curriculum", params.courseId, params.userId],
+          context.previousCurriculum
+        )
+      }
+      toast.error("Failed to reorder concepts")
+    },
+    onSuccess: () => {
+      toast.success("Reordered concepts")
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["curriculum", params.courseId, params.userId],
+      })
+    },
+  })
 
   const handleAddToCurriculum = (conceptId: string) => {
-    if (!selectedWeek) return;
+    if (!selectedWeek) {
+      toast.error("Please select a week first")
+      return
+    }
 
     const weekConcepts =
-      curriculum?.weeks.filter(
-        (item: { weekId: string }) => item.weekId === selectedWeek
-      ) ?? [];
+      curriculum?.weeks?.find((week) => week.weekId === selectedWeek)
+        ?.concepts || []
 
     addToCurriculumMutation.mutate({
       conceptId,
       weekId: selectedWeek,
       order: weekConcepts.length,
-    });
-  };
+    })
+  }
 
   const handleDragEnd = (result: DragEndResult) => {
-    if (!result.destination) return;
+    if (!result.destination) return
 
-    const { source, destination, draggableId: conceptId } = result;
+    const { source, destination, draggableId: conceptId } = result
+    const sourceWeekId = source.droppableId.replace("week-", "")
+    const destWeekId = destination.droppableId.replace("week-", "")
 
-    // Only handle reordering within the curriculum weeks
-    if (
-      source.droppableId.startsWith("week-") &&
-      destination.droppableId.startsWith("week-")
-    ) {
+    // Get the source week's concepts
+    const sourceWeek = curriculum?.weeks?.find(
+      (week) => week.weekId === sourceWeekId
+    )
+    if (!sourceWeek) return
+
+    if (sourceWeekId === destWeekId) {
+      // Reordering within the same week
+      const newConcepts = Array.from(sourceWeek.concepts)
+      const [removed] = newConcepts.splice(source.index, 1)
+      newConcepts.splice(destination.index, 0, removed)
+
+      reorderConceptsMutation.mutate({
+        weekId: sourceWeekId,
+        concepts: newConcepts,
+      })
+    } else {
+      // Moving to a different week
       addToCurriculumMutation.mutate({
         conceptId,
-        weekId: destination.droppableId,
+        weekId: destWeekId,
         order: destination.index,
-      });
+      })
     }
-  };
+  }
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <div className="p-4">
+      <div className="p-4 h-[calc(100vh-4rem)]">
         <div className="mb-6">
           <div className="flex items-center gap-2 text-muted-foreground mb-2">
             <Link
@@ -144,10 +357,10 @@ export default function ManageUserCurriculumPage({ params }: PageProps) {
           <h1 className="text-2xl font-bold">Manage User Curriculum</h1>
         </div>
 
-        <div className="grid grid-cols-6 gap-4">
+        <div className="grid grid-cols-6 gap-4 h-[calc(100%-2rem)]">
           {/* Course Content (Left Side - 4 columns) */}
-          <div className="col-span-4 bg-muted/50 rounded-lg p-4">
-            <h2 className="text-lg font-semibold mb-4">Course Content</h2>
+          <div className="col-span-4 bg-muted/50 rounded-lg overflow-hidden">
+            <h2 className="text-lg font-semibold p-4">Course Content</h2>
             <KanbanBoard
               sections={sections ?? []}
               cards={concepts ?? []}
@@ -159,30 +372,26 @@ export default function ManageUserCurriculumPage({ params }: PageProps) {
               showConceptEditButtons={false}
               isCurriculumView={true}
               onAddToCurriculum={handleAddToCurriculum}
-              // Disable all other mutation functions
-              onCreateSection={() => {}}
-              onUpdateSection={() => {}}
-              onDeleteSection={() => {}}
-              onCreateCard={() => {}}
-              onUpdateCard={() => {}}
-              onDeleteCard={() => {}}
               onRemoveFromCurriculum={removeFromCurriculumMutation.mutate}
             />
           </div>
 
           {/* Curriculum Weeks (Right Side - 2 columns) */}
-          <div className="col-span-2 bg-muted/50 rounded-lg p-4">
-            <h2 className="text-lg font-semibold mb-4">Weekly Curriculum</h2>
-            <CurriculumWeeks
-              weeks={curriculum?.weeks ?? []}
-              isLoading={curriculumLoading}
-              selectedWeek={selectedWeek}
-              onSelectWeek={setSelectedWeek}
-              onUpdateWeek={() => {}}
-            />
+          <div className="col-span-2 bg-muted/50 rounded-lg overflow-hidden">
+            <h2 className="text-lg font-semibold p-4">Weekly Curriculum</h2>
+            <div className="overflow-y-auto h-[calc(100%-4rem)]">
+              <CurriculumWeeks
+                weeks={curriculum?.weeks ?? []}
+                isLoading={curriculumLoading}
+                selectedWeek={selectedWeek}
+                onSelectWeek={setSelectedWeek}
+                onUpdateWeek={(weekId) => addWeekMutation.mutate(weekId)}
+                onRemoveFromCurriculum={removeFromCurriculumMutation.mutate}
+              />
+            </div>
           </div>
         </div>
       </div>
     </DragDropContext>
-  );
+  )
 }

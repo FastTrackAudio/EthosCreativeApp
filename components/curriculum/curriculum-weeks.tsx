@@ -1,73 +1,132 @@
-"use client";
+"use client"
 
-import { Droppable } from "@hello-pangea/dnd";
-import { Card } from "@/components/ui/card";
-import { ConceptCard } from "@/components/kanban/concept-card";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button"
+import { KanbanCard } from "../kanban/kanban-card"
+import { Droppable, Draggable } from "@hello-pangea/dnd"
+import { cn } from "@/lib/utils"
+import { Plus } from "lucide-react"
+import { useState, useEffect } from "react"
+import { ConceptCard } from "@/types/kanban"
+
+interface Week {
+  weekId: string
+  concepts: ConceptCard[]
+}
 
 interface CurriculumWeeksProps {
-  weeks: any[];
-  isLoading: boolean;
-  selectedWeek: string | null;
-  onSelectWeek: (weekId: string | null) => void;
-  onUpdateWeek: (weekId: string, concepts: any[]) => void;
+  weeks: Week[]
+  isLoading: boolean
+  selectedWeek: string | null
+  onSelectWeek: (weekId: string) => void
+  onUpdateWeek: (weekId: string, data: unknown) => void
+  onRemoveFromCurriculum?: (conceptId: string) => void
+  onReorderConcepts?: (weekId: string, concepts: ConceptCard[]) => void
 }
 
 export function CurriculumWeeks({
-  weeks,
+  weeks = [],
   isLoading,
   selectedWeek,
   onSelectWeek,
   onUpdateWeek,
+  onRemoveFromCurriculum,
+  onReorderConcepts,
 }: CurriculumWeeksProps) {
+  const [displayWeeks, setDisplayWeeks] = useState<Week[]>([])
+  const [maxWeek, setMaxWeek] = useState(1)
+
+  useEffect(() => {
+    if (weeks.length === 0) {
+      setDisplayWeeks([{ weekId: "1", concepts: [] }])
+      setMaxWeek(1)
+    } else {
+      setDisplayWeeks(weeks)
+      const highestWeek = Math.max(...weeks.map((w) => parseInt(w.weekId)))
+      setMaxWeek(highestWeek)
+    }
+  }, [weeks])
+
+  const handleAddWeek = () => {
+    const newWeekNumber = maxWeek + 1
+    setMaxWeek(newWeekNumber)
+    const newWeek = {
+      weekId: newWeekNumber.toString(),
+      concepts: [],
+    }
+    setDisplayWeeks([...displayWeeks, newWeek])
+    onUpdateWeek(newWeekNumber.toString(), { concepts: [] })
+  }
+
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <div>Loading...</div>
   }
 
   return (
     <div className="space-y-4">
-      {Array.from({ length: 12 }, (_, i) => i + 1).map((weekNum) => {
-        const weekId = `week-${weekNum}`;
-        return (
-          <Card
-            key={weekNum}
-            className={cn(
-              "p-3 cursor-pointer transition",
-              selectedWeek === weekId && "border-primary"
+      {displayWeeks.map((week) => (
+        <div
+          key={week.weekId}
+          className={cn(
+            "p-4 rounded-lg border transition-colors",
+            selectedWeek === week.weekId
+              ? "border-primary bg-primary/5"
+              : "border-border bg-card text-card-foreground"
+          )}
+        >
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-medium">Week {week.weekId}</h3>
+            <Button
+              variant={selectedWeek === week.weekId ? "default" : "outline"}
+              size="sm"
+              onClick={() => onSelectWeek(week.weekId)}
+            >
+              {selectedWeek === week.weekId ? "Selected" : "Select"}
+            </Button>
+          </div>
+          <Droppable droppableId={`week-${week.weekId}`}>
+            {(provided) => (
+              <div
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                className="space-y-2 min-h-[100px]"
+              >
+                {week.concepts?.map((concept, index) => (
+                  <Draggable
+                    key={concept.id}
+                    draggableId={concept.id}
+                    index={index}
+                  >
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                      >
+                        <KanbanCard
+                          key={concept.id}
+                          card={concept}
+                          isDragging={snapshot.isDragging}
+                          showDescription={false}
+                          showImage={false}
+                          showEditButtons={false}
+                          isWeekView={true}
+                          onRemoveFromCurriculum={onRemoveFromCurriculum}
+                        />
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </div>
             )}
-            onClick={() =>
-              onSelectWeek(selectedWeek === weekId ? null : weekId)
-            }
-          >
-            <h3 className="text-sm font-medium mb-2">Week {weekNum}</h3>
-            <Droppable droppableId={weekId} type="CARD">
-              {(provided) => (
-                <div
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                  className="min-h-[100px] space-y-2"
-                >
-                  {weeks
-                    .filter((item) => item.weekId === weekId)
-                    .map((item, index) => (
-                      <ConceptCard
-                        key={item.conceptId}
-                        card={item.concept}
-                        index={index}
-                        hideDescriptions={true}
-                        hideImages={true}
-                        showEditButtons={false}
-                        onUpdate={() => {}}
-                        onDelete={() => {}}
-                      />
-                    ))}
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
-          </Card>
-        );
-      })}
+          </Droppable>
+        </div>
+      ))}
+
+      <Button variant="outline" className="w-full" onClick={handleAddWeek}>
+        <Plus className="h-4 w-4 mr-2" />
+        Add Week {maxWeek + 1}
+      </Button>
     </div>
-  );
+  )
 }
