@@ -10,6 +10,7 @@ import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { DragDropContext } from "@hello-pangea/dnd"
 import { toast } from "react-toastify"
+import { DropResult } from "@hello-pangea/dnd"
 
 interface PageProps {
   params: {
@@ -18,11 +19,15 @@ interface PageProps {
   }
 }
 
+interface CurriculumWeek {
+  id: string
+  title: string
+  weekId: string
+  concepts: ConceptCard[]
+}
+
 interface CurriculumData {
-  weeks: Array<{
-    weekId: string
-    concepts: ConceptCard[]
-  }>
+  weeks: CurriculumWeek[]
 }
 
 export default function ManageUserCurriculumPage({ params }: PageProps) {
@@ -54,35 +59,44 @@ export default function ManageUserCurriculumPage({ params }: PageProps) {
     },
   })
 
-  const { data: curriculum, isLoading: curriculumLoading } = useQuery({
-    queryKey: ["curriculum", params.courseId, params.userId],
-    queryFn: async () => {
-      const response = await axios.get(
-        `/api/courses/${params.courseId}/users/${params.userId}/curriculum`
-      )
+  const { data: curriculum, isLoading: curriculumLoading } =
+    useQuery<CurriculumData>({
+      queryKey: ["curriculum", params.courseId, params.userId],
+      queryFn: async () => {
+        const response = await axios.get(
+          `/api/courses/${params.courseId}/users/${params.userId}/curriculum`
+        )
 
-      // Transform the data into the expected format
-      const groupedByWeek = response.data.reduce((acc: any, item: any) => {
-        if (!acc[item.weekId]) {
-          acc[item.weekId] = {
-            weekId: item.weekId,
-            concepts: [],
-          }
+        // Transform the data into the expected format
+        const groupedByWeek = response.data.reduce(
+          (acc: Record<string, CurriculumWeek>, item: any) => {
+            if (!acc[item.weekId]) {
+              acc[item.weekId] = {
+                id: item.weekId,
+                title: `Week ${item.weekId}`,
+                weekId: item.weekId,
+                concepts: [],
+              }
+            }
+            acc[item.weekId].concepts.push({
+              id: item.conceptId,
+              title: item.concept.title,
+              description: item.concept.description,
+              sectionId: item.concept.sectionId,
+              createdAt: item.concept.createdAt || new Date(),
+              updatedAt: item.concept.updatedAt || new Date(),
+              order: item.concept.order,
+            })
+            return acc
+          },
+          {}
+        )
+
+        return {
+          weeks: Object.values(groupedByWeek),
         }
-        acc[item.weekId].concepts.push({
-          id: item.conceptId,
-          title: item.concept.title,
-          description: item.concept.description,
-          sectionId: item.concept.sectionId,
-        })
-        return acc
-      }, {})
-
-      return {
-        weeks: Object.values(groupedByWeek),
-      }
-    },
-  })
+      },
+    })
 
   const addToCurriculumMutation = useMutation({
     mutationFn: async ({
@@ -129,7 +143,12 @@ export default function ManageUserCurriculumPage({ params }: PageProps) {
             const weekIndex = newWeeks.findIndex((w) => w.weekId === weekId)
 
             if (weekIndex === -1) {
-              newWeeks.push({ weekId, concepts: [concept] })
+              newWeeks.push({
+                id: weekId,
+                title: `Week ${weekId}`,
+                weekId,
+                concepts: [concept],
+              })
             } else {
               newWeeks[weekIndex].concepts.splice(order, 0, concept)
             }
@@ -298,8 +317,9 @@ export default function ManageUserCurriculumPage({ params }: PageProps) {
     }
 
     const weekConcepts =
-      curriculum?.weeks?.find((week) => week.weekId === selectedWeek)
-        ?.concepts || []
+      curriculum?.weeks?.find(
+        (week: CurriculumWeek) => week.weekId === selectedWeek
+      )?.concepts || []
 
     addToCurriculumMutation.mutate({
       conceptId,
@@ -308,7 +328,7 @@ export default function ManageUserCurriculumPage({ params }: PageProps) {
     })
   }
 
-  const handleDragEnd = (result: DragEndResult) => {
+  const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return
 
     const { source, destination, draggableId: conceptId } = result
@@ -317,7 +337,7 @@ export default function ManageUserCurriculumPage({ params }: PageProps) {
 
     // Get the source week's concepts
     const sourceWeek = curriculum?.weeks?.find(
-      (week) => week.weekId === sourceWeekId
+      (week: CurriculumWeek) => week.weekId === sourceWeekId
     )
     if (!sourceWeek) return
 
@@ -373,6 +393,14 @@ export default function ManageUserCurriculumPage({ params }: PageProps) {
               isCurriculumView={true}
               onAddToCurriculum={handleAddToCurriculum}
               onRemoveFromCurriculum={removeFromCurriculumMutation.mutate}
+              onCreateSection={() => {}}
+              onUpdateSection={() => {}}
+              onDeleteSection={() => {}}
+              onCreateCard={() => {}}
+              onUpdateCard={() => {}}
+              onDeleteCard={() => {}}
+              editorMode={false}
+              courseId={params.courseId}
             />
           </div>
 

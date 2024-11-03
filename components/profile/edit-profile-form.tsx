@@ -60,6 +60,9 @@ interface EditProfileFormProps {
   user: ProfileFormValues & { id: string }
 }
 
+// Add this type definition for social links
+type SocialPlatform = keyof ProfileFormValues["socialLinks"]
+
 export function EditProfileForm({ user }: EditProfileFormProps) {
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -266,7 +269,7 @@ export function EditProfileForm({ user }: EditProfileFormProps) {
               <FormField
                 key={platform}
                 control={form.control}
-                name={`socialLinks.${platform}`}
+                name={`socialLinks.${platform as SocialPlatform}`}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="capitalize text-[color:var(--color-text)]">
@@ -275,6 +278,7 @@ export function EditProfileForm({ user }: EditProfileFormProps) {
                     <FormControl>
                       <Input
                         {...field}
+                        value={field.value || ""}
                         placeholder={`Your ${platform} URL`}
                         className="bg-[color:var(--color-surface)] border-[color:var(--color-border)] text-[color:var(--color-text)]"
                       />

@@ -7,13 +7,19 @@ import { useUploadThing } from "@/lib/uploadthing"
 import { Upload, X } from "lucide-react"
 import { Button } from "./button"
 
-interface ImageUploadProps {
-  value?: string
+export interface ImageUploadProps {
+  value: string
   onChange: (url?: string) => void
+  onRemove?: () => void
   disabled?: boolean
 }
 
-export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
+export function ImageUpload({
+  value,
+  onChange,
+  onRemove,
+  disabled = false,
+}: ImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false)
 
   const { startUpload } = useUploadThing("imageUploader", {

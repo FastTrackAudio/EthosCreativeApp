@@ -1,6 +1,9 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 
+// Add the UserType type definition
+type UserType = "creator" | "editor" | "viewer"
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }

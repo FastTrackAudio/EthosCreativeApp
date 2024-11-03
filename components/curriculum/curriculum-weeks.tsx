@@ -105,6 +105,7 @@ export function CurriculumWeeks({
                         <KanbanCard
                           key={concept.id}
                           card={concept}
+                          index={index}
                           isDragging={snapshot.isDragging}
                           showDescription={false}
                           showImage={false}

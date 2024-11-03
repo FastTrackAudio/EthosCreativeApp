@@ -1,16 +1,19 @@
 "use client"
 
+import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Plus, Edit, Trash, X } from "lucide-react"
+import { Plus, Edit, Trash2, X } from "lucide-react"
 import Image from "next/image"
 import { ConceptCard } from "@/types/kanban"
+import { useRouter } from "next/navigation"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from "@/components/ui/dialog"
 import {
   AlertDialog,
@@ -23,14 +26,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { DialogClose } from "@/components/ui/dialog"
 import { ImageUpload } from "@/components/ui/image-upload"
 
 interface KanbanCardProps {
   card: ConceptCard
+  index: number
   isDragging: boolean
   showDescription?: boolean
   showImage?: boolean
@@ -38,6 +40,7 @@ interface KanbanCardProps {
   isCurriculumView?: boolean
   isInCurriculum?: boolean
   isWeekView?: boolean
+  editorMode?: boolean
   onAddToCurriculum?: (conceptId: string) => void
   onRemoveFromCurriculum?: (conceptId: string) => void
   onUpdateCard?: (data: Partial<ConceptCard> & { id: string }) => void
@@ -47,6 +50,7 @@ interface KanbanCardProps {
 
 export function KanbanCard({
   card,
+  index,
   isDragging,
   showDescription = true,
   showImage = true,
@@ -54,15 +58,28 @@ export function KanbanCard({
   isCurriculumView = false,
   isInCurriculum = false,
   isWeekView = false,
+  editorMode = true,
   onAddToCurriculum,
   onRemoveFromCurriculum,
   onUpdateCard,
   onDeleteCard,
   onUpdateImage,
 }: KanbanCardProps) {
+  const router = useRouter()
   const [editTitle, setEditTitle] = useState(card.title)
   const [editDescription, setEditDescription] = useState(card.description || "")
   const [editImage, setEditImage] = useState(card.imageUrl || "")
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (card.id && card.courseId) {
+      router.push(
+        `/dashboard/admin/manage-courses/${card.courseId}/concepts/${card.id}`
+      )
+    }
+  }
 
   const handleEdit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -74,14 +91,21 @@ export function KanbanCard({
     })
   }
 
+  const handleImageChange = (url?: string) => {
+    setEditImage(url || "")
+  }
+
   return (
     <div
       className={cn(
-        "p-3 rounded-lg shadow-sm transition-all hover:ring-2 hover:ring-primary/20",
+        "p-3 rounded-lg shadow-sm transition-all hover:ring-2 hover:ring-primary/20 cursor-pointer",
         isDragging && "shadow-lg",
         isWeekView ? "bg-card" : "bg-background",
         isInCurriculum && !isWeekView && "bg-muted"
       )}
+      onClick={handleCardClick}
+      role="button"
+      tabIndex={0}
     >
       <div className="flex justify-between items-start gap-2">
         <h3 className="text-sm font-medium">{card.title}</h3>
@@ -134,11 +158,24 @@ export function KanbanCard({
                       value={editDescription}
                       onChange={(e) => setEditDescription(e.target.value)}
                     />
-                    <ImageUpload
-                      value={editImage}
-                      onChange={setEditImage}
-                      onRemove={() => setEditImage("")}
-                    />
+                    <div className="space-y-2">
+                      <ImageUpload
+                        value={editImage}
+                        onChange={(url) => setEditImage(url || "")}
+                        disabled={false}
+                      />
+                      {editImage && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={() => setEditImage("")}
+                        >
+                          Remove Image
+                        </Button>
+                      )}
+                    </div>
                     <div className="flex justify-end gap-2">
                       <DialogClose asChild>
                         <Button type="button" variant="outline">
@@ -153,7 +190,7 @@ export function KanbanCard({
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-6 w-6">
-                    <Trash className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>

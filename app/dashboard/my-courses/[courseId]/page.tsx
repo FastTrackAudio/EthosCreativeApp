@@ -59,12 +59,14 @@ async function getCourseData(courseId: string, userId: string) {
         description: concept.description,
         imageUrl: concept.imageUrl,
         completed: isCompleted,
+        order: concept.order,
+        sectionTitle: section.title,
       }
     }),
   }))
 
   return {
-    courseId,
+    courseId: course.id,
     courseTitle: course.title,
     courseDescription: course.description,
     sections,
@@ -87,7 +89,6 @@ export default async function EnrolledCoursePage({
 
   return (
     <EnrolledCourseView
-      courseId={params.courseId}
       {...courseData}
       onCompleteAction={completeConceptAction}
     />

@@ -1,19 +1,19 @@
-import { AppLayout } from "@/components/app-layout";
-import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/ui/sidebar-09";
-import { TopNavBar } from "@/components/ui/top-nav-bar";
-import "@blocknote/mantine/style.css";
-import "@/styles/globals.css";
-import "@/styles/text-editor.css";
+import { AppLayout } from "@/components/app-layout"
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server"
+import { SidebarProvider } from "@/components/ui/sidebar"
+import { AppSidebar } from "@/components/ui/sidebar-09"
+import { TopNavBar } from "@/components/ui/top-nav-bar"
+import "@blocknote/mantine/style.css"
+import "@/styles/globals.css"
+import "@/styles/text-editor.css"
 
 export default async function DashboardLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
-  const { getUser } = getKindeServerSession();
-  const user = await getUser();
+  const { getUser } = getKindeServerSession()
+  const user = await getUser()
 
   return (
     <SidebarProvider>
@@ -31,5 +31,5 @@ export default async function DashboardLayout({
         </div>
       </div>
     </SidebarProvider>
-  );
+  )
 }

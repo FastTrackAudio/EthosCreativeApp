@@ -32,6 +32,7 @@ interface EnrolledCourseViewProps {
     sectionId: string
     sectionTitle: string
   } | null
+  onCompleteAction: (conceptId: string, courseId: string) => Promise<void>
 }
 
 interface CurriculumEntry {
@@ -41,12 +42,20 @@ interface CurriculumEntry {
   isCompleted: boolean
 }
 
+// Also update the type for organizedConcepts to include curriculumOrder and weekId
+type ConceptWithCurriculum =
+  EnrolledCourseViewProps["sections"][0]["concepts"][0] & {
+    curriculumOrder: number
+    weekId: string
+  }
+
 export function EnrolledCourseView({
   courseId,
   courseTitle,
   courseDescription,
   sections,
   nextConcept,
+  onCompleteAction,
 }: EnrolledCourseViewProps) {
   // Fetch curriculum order
   const { data: curriculum } = useQuery<CurriculumEntry[]>({
@@ -88,7 +97,7 @@ export function EnrolledCourseView({
         weekId: curr.weekId,
       })
       return acc
-    }, {} as Record<string, typeof allConcepts>)
+    }, {} as Record<string, ConceptWithCurriculum[]>)
 
     // Sort within each week and flatten
     return Object.entries(weekGroups)

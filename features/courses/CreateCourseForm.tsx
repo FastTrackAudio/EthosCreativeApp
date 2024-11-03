@@ -11,12 +11,20 @@ import { toast } from "sonner"
 import { useUploadThing } from "@/lib/uploadthing"
 import { ImageUpload } from "@/components/ui/image-upload"
 
-export function CreateCourseForm({ onClose }: { onClose: () => void }) {
+interface CreateCourseFormProps {
+  onClose: () => void
+}
+
+export function CreateCourseForm({ onClose }: CreateCourseFormProps) {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [imageUrl, setImageUrl] = useState("")
   const router = useRouter()
   const queryClient = useQueryClient()
+
+  const handleImageChange = (url?: string) => {
+    setImageUrl(url || "")
+  }
 
   const createCourseMutation = useMutation({
     mutationFn: async (courseData: {
@@ -70,7 +78,7 @@ export function CreateCourseForm({ onClose }: { onClose: () => void }) {
       />
       <ImageUpload
         value={imageUrl}
-        onChange={setImageUrl}
+        onChange={handleImageChange}
         onRemove={() => setImageUrl("")}
       />
       <div className="flex justify-end gap-2">

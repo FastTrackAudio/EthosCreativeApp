@@ -11,15 +11,20 @@ import { cn } from "@/lib/utils"
 
 interface BlockNoteEditorComponentProps {
   conceptId: string
-  initialContent: string | null
-  onUpdate?: (content: string) => void
+  sectionId: string
+  courseId: string
+  initialContent: any
+  onChange: (content: PartialBlock[]) => void
   isTransparent?: boolean
   editorMode?: boolean
 }
 
 export function BlockNoteEditorComponent({
+  conceptId,
+  sectionId,
+  courseId,
   initialContent,
-  onUpdate,
+  onChange,
   isTransparent,
   editorMode = true,
 }: BlockNoteEditorComponentProps) {
@@ -96,8 +101,8 @@ export function BlockNoteEditorComponent({
       },
     },
     // Configure editor features based on mode
-    sideMenu: editorMode, // Only show side menu in editor mode
-    slashMenu: editorMode, // Only show slash menu in editor mode
+    // sideMenu: editorMode, // Only show side menu in editor mode
+    // slashMenu: editorMode, // Only show slash menu in editor mode
     defaultStyles: true,
   })
 
@@ -115,12 +120,12 @@ export function BlockNoteEditorComponent({
 
   // Handle content changes in editor mode
   useEffect(() => {
-    if (!editorRef.current || !onUpdate || !editorMode) return
+    if (!editorRef.current || !onChange || !editorMode) return
 
     const saveContent = () => {
       const blocks = editorRef.current?.topLevelBlocks
       if (blocks) {
-        onUpdate(JSON.stringify(blocks))
+        onChange(blocks)
       }
     }
 
@@ -133,7 +138,7 @@ export function BlockNoteEditorComponent({
     return () => {
       editor.onEditorContentChange(() => {}) // Remove listener
     }
-  }, [editor, onUpdate, editorMode])
+  }, [editor, onChange, editorMode])
 
   return (
     <div

@@ -1,3 +1,10 @@
+import { KanbanSection } from "@/types/kanban"
+
+import { ConceptCard } from "@/types/kanban"
+import { Droppable } from "@hello-pangea/dnd"
+import { Draggable } from "react-beautiful-dnd"
+import { KanbanCard } from "./kanban-card"
+
 interface KanbanBoardProps {
   sections: KanbanSection[]
   cards: ConceptCard[]
@@ -62,6 +69,7 @@ KanbanBoardProps) {
                         >
                           <KanbanCard
                             card={card}
+                            index={index}
                             isDragging={snapshot.isDragging}
                             showDescription={showCardDescription}
                             showImage={showCardImage}

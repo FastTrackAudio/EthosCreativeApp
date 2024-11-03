@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getUsers } from "@/database";
+import { NextRequest, NextResponse } from "next/server"
+import { prisma } from "@/lib/database"
 
 /**
  * Returns a list of user IDs from a partial search input
@@ -7,14 +7,29 @@ import { getUsers } from "@/database";
  */
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const text = searchParams.get("text") as string;
+  const { searchParams } = new URL(request.url)
+  const text = searchParams.get("text") as string
 
-  const filteredUserIds = getUsers()
-    .filter((user) => {
-      return user.info.name.toLowerCase().includes(text.toLowerCase());
+  const filteredUserIds = prisma.user
+    .findMany({
+      where: {
+        OR: [
+          {
+            firstName: {
+              contains: text,
+              mode: "insensitive",
+            },
+          },
+          {
+            lastName: {
+              contains: text,
+              mode: "insensitive",
+            },
+          },
+        ],
+      },
     })
-    .map((user) => user.id);
+    .then((users: Array<{ id: string }>) => users.map((user) => user.id))
 
-  return NextResponse.json(filteredUserIds);
+  return NextResponse.json(filteredUserIds)
 }

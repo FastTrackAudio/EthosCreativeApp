@@ -3,6 +3,8 @@ import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { CustomUrlManager } from "@/components/profile/custom-url-manager"
 
+export const dynamic = "force-dynamic"
+
 export default async function SettingsPage() {
   const { getUser } = getKindeServerSession()
   const user = await getUser()
@@ -33,6 +35,7 @@ export default async function SettingsPage() {
             <CustomUrlManager
               currentUrl={dbUser?.customUrl || null}
               userId={user.id}
+              type="artist"
             />
           </div>
           {/* Add other settings sections here */}

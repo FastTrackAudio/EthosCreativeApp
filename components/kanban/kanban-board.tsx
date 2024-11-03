@@ -1,6 +1,15 @@
 "use client"
 
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd"
+import { useState } from "react"
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+  DroppableProvided,
+  DraggableProvided,
+  DraggableStateSnapshot,
+} from "@hello-pangea/dnd"
 import { Button } from "@/components/ui/button"
 import {
   Plus,
@@ -12,9 +21,8 @@ import {
   X,
 } from "lucide-react"
 import { KanbanCard } from "./kanban-card"
-import { ConceptCard, KanbanSection } from "@/types/kanban"
+import { ConceptCard, KanbanSection, CurriculumWeek } from "@/types/kanban"
 import { cn } from "@/lib/utils"
-import { useState } from "react"
 import {
   Dialog,
   DialogContent,
@@ -46,22 +54,21 @@ import {
 interface KanbanBoardProps {
   sections: KanbanSection[]
   cards: ConceptCard[]
-  isLoading?: boolean
+  isLoading: boolean
+  sectionWidth?: string
+  showConceptEditButtons?: boolean
   showCardDescription?: boolean
   showCardImage?: boolean
-  showConceptEditButtons?: boolean
+  editorMode?: boolean
+  courseId?: string
   isCurriculumView?: boolean
-  sectionWidth?: string
-  curriculumWeeks?: Array<{
-    weekId: string
-    concepts: ConceptCard[]
-  }>
-  onCreateSection?: (data: { title: string }) => void
-  onUpdateSection?: (data: Partial<KanbanSection> & { id: string }) => void
-  onDeleteSection?: (id: string) => void
-  onCreateCard?: (data: { title: string; sectionId: string }) => void
-  onUpdateCard?: (data: Partial<ConceptCard> & { id: string }) => void
-  onDeleteCard?: (id: string) => void
+  curriculumWeeks?: CurriculumWeek[]
+  onCreateSection: (data: { title: string; order: number }) => void
+  onUpdateSection: (data: Partial<KanbanSection> & { id: string }) => void
+  onDeleteSection: (id: string) => void
+  onCreateCard: (data: Partial<ConceptCard> & { sectionId: string }) => void
+  onUpdateCard: (data: Partial<ConceptCard> & { id: string }) => void
+  onDeleteCard: (id: string) => void
   onAddToCurriculum?: (conceptId: string) => void
   onRemoveFromCurriculum?: (conceptId: string) => void
 }
@@ -75,6 +82,7 @@ export function KanbanBoard({
   isCurriculumView = false,
   sectionWidth = "min-w-[300px]",
   curriculumWeeks = [],
+  editorMode = true,
   onCreateSection,
   onUpdateSection,
   onDeleteSection,
@@ -95,7 +103,7 @@ export function KanbanBoard({
     )
   }
 
-  const handleDragEnd = (result: any) => {
+  const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return
 
     const { source, destination, draggableId: conceptId } = result
@@ -245,7 +253,7 @@ export function KanbanBoard({
                   </div>
 
                   <Droppable droppableId={section.id} type="CONCEPT">
-                    {(provided) => (
+                    {(provided: DroppableProvided) => (
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
@@ -263,7 +271,10 @@ export function KanbanBoard({
                               draggableId={card.id}
                               index={index}
                             >
-                              {(provided, snapshot) => (
+                              {(
+                                provided: DraggableProvided,
+                                snapshot: DraggableStateSnapshot
+                              ) => (
                                 <div
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
@@ -271,6 +282,7 @@ export function KanbanBoard({
                                 >
                                   <KanbanCard
                                     card={card}
+                                    index={index}
                                     isDragging={snapshot.isDragging}
                                     showDescription={showCardDescription}
                                     showImage={showCardImage}
@@ -279,6 +291,7 @@ export function KanbanBoard({
                                     isInCurriculum={isConceptInCurriculum(
                                       card.id
                                     )}
+                                    editorMode={editorMode}
                                     onAddToCurriculum={onAddToCurriculum}
                                     onRemoveFromCurriculum={
                                       onRemoveFromCurriculum
@@ -358,7 +371,7 @@ export function KanbanBoard({
               <Button
                 variant="outline"
                 className="h-fit mt-4"
-                onClick={() => onCreateSection({ title: "" })}
+                onClick={() => onCreateSection({ title: "", order: 0 })}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Section

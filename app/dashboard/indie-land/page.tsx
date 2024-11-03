@@ -1,4 +1,6 @@
-import React from "react";
+import React from "react"
+
+export const dynamic = "force-dynamic"
 
 export default function IndieLand() {
   return (
@@ -9,5 +11,5 @@ export default function IndieLand() {
         creators.
       </p>
     </div>
-  );
+  )
 }

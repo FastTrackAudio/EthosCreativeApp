@@ -1,5 +1,13 @@
+import { ConceptCard } from "@/types/kanban"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Plus } from "lucide-react"
+import { DropdownMenu } from "@/components/ui/dropdown-menu"
+import Image from "next/image"
+
 interface KanbanCardProps {
   card: ConceptCard
+  index: number
   isDragging: boolean
   showDescription?: boolean
   showImage?: boolean
@@ -11,6 +19,7 @@ interface KanbanCardProps {
 
 export function KanbanCard({
   card,
+  index,
   isDragging,
   showDescription = true,
   showImage = true,

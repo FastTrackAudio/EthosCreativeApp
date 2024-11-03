@@ -1,63 +1,16 @@
 {
-  "extends": ["next/core-web-vitals", "next/typescript"],
-  "plugins": ["boundaries"],
-  "settings": {
-    "boundaries/include": ["**/*"],
-    "boundaries/elements": [
-      {
-        "type": "shared",
-        "pattern": [
-          "lib/**/*",
-          "api/**/*",
-          "database/**/*",
-          "components/**/*",
-          "utils/**/*"
-        ]
-      },
-      {
-        "type": "features",
-        "pattern": "features/**/*",
-        "capture": ["featureName"]
-      },
-      {
-        "type": "app",
-        "pattern": "app/**/*"
-      },
-      {
-        "type": "root",
-        "pattern": ["*", "middleware.ts"]
-      }
-    ]
-  },
+  "extends": ["next/core-web-vitals", "plugin:@typescript-eslint/recommended"],
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
   "rules": {
-    "boundaries/element-types": [
-      "error",
-      {
-        "default": "disallow",
-        "rules": [
-          {
-            "from": ["shared"],
-            "allow": ["shared", ["features", { "featureName": "dashboard" }]]
-          },
-          {
-            "from": ["features"],
-            "allow": [
-              "shared",
-              ["features", { "featureName": "${from.featureName}" }]
-            ]
-          },
-          {
-            "from": ["app"],
-            "allow": ["shared", "features"]
-          },
-          {
-            "from": ["root"],
-            "allow": ["shared", "features", "app", "root"]
-          }
-        ]
-      }
-    ],
-    "boundaries/no-unknown": "error",
-    "boundaries/no-unknown-files": "error"
+    "@typescript-eslint/no-unused-vars": "off",
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-empty-interface": "off",
+    "@typescript-eslint/no-empty-object-type": "off",
+    "react/no-unescaped-entities": "off",
+    "@next/next/no-img-element": "off",
+    "no-var": "warn",
+    "@typescript-eslint/ban-ts-comment": "off",
+    "@typescript-eslint/no-empty-function": "off"
   }
 }

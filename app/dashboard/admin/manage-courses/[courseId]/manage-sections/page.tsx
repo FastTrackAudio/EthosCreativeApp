@@ -3,12 +3,17 @@
 import React, { useState } from "react"
 import { KanbanBoard } from "@/components/kanban/kanban-board"
 import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Type, ImageOff } from "lucide-react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import axios from "axios"
 import { ConceptCard, KanbanSection } from "@/types/kanban"
 import { Button } from "@/components/ui/button"
-import { Type, ImageOff } from "lucide-react"
+
+type ConceptUpdateData = Partial<ConceptCard> & {
+  id: string
+  sectionId?: string
+  order?: number
+}
 
 export default function ManageSectionsPage({
   params,
@@ -19,19 +24,8 @@ export default function ManageSectionsPage({
   const [hideDescriptions, setHideDescriptions] = useState(false)
   const [hideImages, setHideImages] = useState(false)
 
-  // Fetch course details
-  const { data: course } = useQuery({
-    queryKey: ["course", params.courseId],
-    queryFn: async () => {
-      const response = await axios.get(`/api/courses/${params.courseId}`)
-      return response.data
-    },
-  })
-
-  // Fetch sections and concepts
-  const { data: sections, isLoading: sectionsLoading } = useQuery<
-    KanbanSection[]
-  >({
+  // Fetch sections
+  const { data: sections, isLoading: sectionsLoading } = useQuery({
     queryKey: ["sections", params.courseId],
     queryFn: async () => {
       const response = await axios.get(
@@ -41,9 +35,8 @@ export default function ManageSectionsPage({
     },
   })
 
-  const { data: concepts, isLoading: conceptsLoading } = useQuery<
-    ConceptCard[]
-  >({
+  // Fetch concepts
+  const { data: concepts, isLoading: conceptsLoading } = useQuery({
     queryKey: ["concepts", params.courseId],
     queryFn: async () => {
       const response = await axios.get(
@@ -53,63 +46,23 @@ export default function ManageSectionsPage({
     },
   })
 
-  // Mutations for sections
+  // Create section mutation
   const createSection = useMutation({
     mutationFn: async (data: { title: string; order: number }) => {
       const response = await axios.post(
         `/api/courses/${params.courseId}/sections`,
-        {
-          ...data,
-          courseId: params.courseId,
-        }
+        data
       )
       return response.data
     },
-    onMutate: async (newData) => {
-      await queryClient.cancelQueries({
-        queryKey: ["sections", params.courseId],
-      })
-
-      const previousSections = queryClient.getQueryData<KanbanSection[]>([
-        "sections",
-        params.courseId,
-      ])
-
-      // Create an optimistic section
-      const optimisticSection: KanbanSection = {
-        id: `temp-${Date.now()}`,
-        title: newData.title,
-        description: null,
-        order: newData.order,
-        courseId: params.courseId,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }
-
-      if (previousSections) {
-        queryClient.setQueryData<KanbanSection[]>(
-          ["sections", params.courseId],
-          [...previousSections, optimisticSection]
-        )
-      }
-
-      return { previousSections }
-    },
-    onError: (err, newData, context) => {
-      if (context?.previousSections) {
-        queryClient.setQueryData(
-          ["sections", params.courseId],
-          context.previousSections
-        )
-      }
-    },
-    onSettled: () => {
+    onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["sections", params.courseId],
       })
     },
   })
 
+  // Update section mutation
   const updateSection = useMutation({
     mutationFn: async (data: Partial<KanbanSection> & { id: string }) => {
       const response = await axios.patch(
@@ -118,92 +71,21 @@ export default function ManageSectionsPage({
       )
       return response.data
     },
-    onMutate: async (newData) => {
-      await queryClient.cancelQueries({
-        queryKey: ["sections", params.courseId],
-      })
-
-      const previousSections = queryClient.getQueryData<KanbanSection[]>([
-        "sections",
-        params.courseId,
-      ])
-
-      if (previousSections) {
-        queryClient.setQueryData<KanbanSection[]>(
-          ["sections", params.courseId],
-          previousSections.map((section) =>
-            section.id === newData.id ? { ...section, ...newData } : section
-          )
-        )
-      }
-
-      return { previousSections }
-    },
-    onError: (err, newData, context) => {
-      if (context?.previousSections) {
-        queryClient.setQueryData(
-          ["sections", params.courseId],
-          context.previousSections
-        )
-      }
-    },
-    onSettled: () => {
+    onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["sections", params.courseId],
       })
     },
   })
 
+  // Delete section mutation
   const deleteSection = useMutation({
     mutationFn: async (sectionId: string) => {
       await axios.delete(
         `/api/courses/${params.courseId}/sections/${sectionId}`
       )
     },
-    onMutate: async (deletedId) => {
-      await queryClient.cancelQueries({
-        queryKey: ["sections", params.courseId],
-      })
-
-      const previousSections = queryClient.getQueryData<KanbanSection[]>([
-        "sections",
-        params.courseId,
-      ])
-
-      if (previousSections) {
-        // Remove the section
-        queryClient.setQueryData<KanbanSection[]>(
-          ["sections", params.courseId],
-          previousSections.filter((section) => section.id !== deletedId)
-        )
-
-        // Also remove all concepts in this section
-        const previousConcepts = queryClient.getQueryData<ConceptCard[]>([
-          "concepts",
-          params.courseId,
-        ])
-
-        if (previousConcepts) {
-          queryClient.setQueryData<ConceptCard[]>(
-            ["concepts", params.courseId],
-            previousConcepts.filter(
-              (concept) => concept.sectionId !== deletedId
-            )
-          )
-        }
-      }
-
-      return { previousSections }
-    },
-    onError: (err, deletedId, context) => {
-      if (context?.previousSections) {
-        queryClient.setQueryData(
-          ["sections", params.courseId],
-          context.previousSections
-        )
-      }
-    },
-    onSettled: () => {
+    onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["sections", params.courseId],
       })
@@ -213,19 +95,16 @@ export default function ManageSectionsPage({
     },
   })
 
-  // Mutations for concepts with optimistic updates
+  // Update concept mutation
   const updateConcept = useMutation({
-    mutationFn: async (data: Partial<ConceptCard> & { id: string }) => {
-      if (!data.id) {
-        throw new Error("Concept ID is required for updates")
-      }
+    mutationFn: async (data: ConceptUpdateData) => {
       const response = await axios.patch(
         `/api/courses/${params.courseId}/concepts/${data.id}`,
         data
       )
       return response.data
     },
-    onMutate: async (newData) => {
+    onMutate: async (newData: ConceptUpdateData) => {
       await queryClient.cancelQueries({
         queryKey: ["concepts", params.courseId],
       })
@@ -239,26 +118,17 @@ export default function ManageSectionsPage({
         let updatedConcepts = [...previousConcepts]
 
         if (newData.sectionId && newData.order !== undefined) {
-          // Handle moving between sections and reordering
           const movingConcept = updatedConcepts.find((c) => c.id === newData.id)
           if (movingConcept) {
-            // Remove from old position
             updatedConcepts = updatedConcepts.filter((c) => c.id !== newData.id)
-
-            // Update the concept
             const updatedConcept = { ...movingConcept, ...newData }
-
-            // Insert at new position
             updatedConcepts.splice(newData.order, 0, updatedConcept)
-
-            // Update orders
             updatedConcepts = updatedConcepts.map((concept, index) => ({
               ...concept,
               order: index,
             }))
           }
         } else {
-          // Handle simple updates
           updatedConcepts = updatedConcepts.map((concept) =>
             concept.id === newData.id ? { ...concept, ...newData } : concept
           )
@@ -287,50 +157,23 @@ export default function ManageSectionsPage({
     },
   })
 
+  // Delete concept mutation
   const deleteConcept = useMutation({
     mutationFn: async (conceptId: string) => {
       await axios.delete(
         `/api/courses/${params.courseId}/concepts/${conceptId}`
       )
     },
-    onMutate: async (deletedId) => {
-      await queryClient.cancelQueries({
-        queryKey: ["concepts", params.courseId],
-      })
-
-      const previousConcepts = queryClient.getQueryData<ConceptCard[]>([
-        "concepts",
-        params.courseId,
-      ])
-
-      if (previousConcepts) {
-        queryClient.setQueryData<ConceptCard[]>(
-          ["concepts", params.courseId],
-          (old) => old?.filter((concept) => concept.id !== deletedId)
-        )
-      }
-
-      return { previousConcepts }
-    },
-    onError: (err, deletedId, context) => {
-      if (context?.previousConcepts) {
-        queryClient.setQueryData(
-          ["concepts", params.courseId],
-          context.previousConcepts
-        )
-      }
-    },
-    onSettled: () => {
+    onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["concepts", params.courseId],
       })
     },
   })
 
-  // Add createConcept mutation
+  // Create concept mutation
   const createConcept = useMutation({
     mutationFn: async (data: Partial<ConceptCard> & { sectionId: string }) => {
-      // Get the current concepts to determine the order
       const currentConcepts = queryClient.getQueryData<ConceptCard[]>([
         "concepts",
         params.courseId,
@@ -349,49 +192,7 @@ export default function ManageSectionsPage({
       )
       return response.data
     },
-    onMutate: async (newData) => {
-      await queryClient.cancelQueries({
-        queryKey: ["concepts", params.courseId],
-      })
-
-      const previousConcepts = queryClient.getQueryData<ConceptCard[]>([
-        "concepts",
-        params.courseId,
-      ])
-
-      // Create an optimistic concept
-      const optimisticConcept: ConceptCard = {
-        id: `temp-${Date.now()}`,
-        title: newData.title!,
-        description: newData.description ?? null,
-        imageUrl: newData.imageUrl ?? null,
-        sectionId: newData.sectionId,
-        order: newData.order ?? 0,
-        content: "{}",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        videoUrl: null,
-        quizId: null,
-      }
-
-      if (previousConcepts) {
-        queryClient.setQueryData<ConceptCard[]>(
-          ["concepts", params.courseId],
-          [...previousConcepts, optimisticConcept]
-        )
-      }
-
-      return { previousConcepts }
-    },
-    onError: (err, newData, context) => {
-      if (context?.previousConcepts) {
-        queryClient.setQueryData(
-          ["concepts", params.courseId],
-          context.previousConcepts
-        )
-      }
-    },
-    onSettled: () => {
+    onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["concepts", params.courseId],
       })
@@ -409,13 +210,6 @@ export default function ManageSectionsPage({
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Courses
           </Link>
-        </div>
-        <div className="flex justify-between items-center">
-          <div className="flex gap-2">
-            <Link
-              href={`/dashboard/admin/manage-courses/${params.courseId}/edit`}
-            ></Link>
-          </div>
         </div>
       </div>
 
@@ -456,10 +250,11 @@ export default function ManageSectionsPage({
                 cards={concepts ?? []}
                 isLoading={sectionsLoading || conceptsLoading}
                 sectionWidth="min-w-[250px]"
-                conceptMaxWidth="max-w-[400px]"
                 showConceptEditButtons={true}
                 showCardDescription={!hideDescriptions}
                 showCardImage={!hideImages}
+                editorMode={false}
+                courseId={params.courseId}
                 onCreateSection={(data) => createSection.mutate(data)}
                 onUpdateSection={(data) => updateSection.mutate(data)}
                 onDeleteSection={(id) => deleteSection.mutate(id)}

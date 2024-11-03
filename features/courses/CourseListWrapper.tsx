@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { Course } from "@prisma/client"
+import { type Course } from "@/types"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -55,26 +55,46 @@ import axios from "axios"
 import { CreateCourseForm } from "./CreateCourseForm"
 import { formatDate } from "@/lib/utils"
 
-interface ExtendedCourse extends Course {
+interface ExtendedCourse {
+  id: string
+  title: string
+  description: string | null
+  userId: string
+  createdAt: Date
+  updatedAt: Date
+  published?: boolean
   _count?: {
     enrollments: number
+    sections: number
+  }
+  user?: {
+    firstName: string
+    lastName: string
   }
 }
 
 interface CourseListWrapperProps {
-  initialCourses: ExtendedCourse[]
+  userId?: string
+  isAdmin?: boolean
+  initialCourses?: ExtendedCourse[]
 }
 
-export function CourseListWrapper({ initialCourses }: CourseListWrapperProps) {
+export function CourseListWrapper({
+  userId,
+  isAdmin,
+  initialCourses = [],
+}: CourseListWrapperProps) {
   const queryClient = useQueryClient()
   const pathname = usePathname()
-  const isAdminView = pathname.includes("/admin")
+  const [isOpen, setIsOpen] = React.useState(false)
 
-  const { data: courses } = useQuery({
-    queryKey: ["courses"],
+  const { data: courses = initialCourses, isLoading } = useQuery<
+    ExtendedCourse[]
+  >({
+    queryKey: ["courses", userId],
     queryFn: async () => {
       const response = await fetch(
-        isAdminView ? "/api/courses/admin" : "/api/courses"
+        `/api/courses${userId ? `?userId=${userId}` : ""}`
       )
       if (!response.ok) throw new Error("Failed to fetch courses")
       return response.json()
@@ -91,13 +111,17 @@ export function CourseListWrapper({ initialCourses }: CourseListWrapperProps) {
     },
   })
 
+  if (isLoading) {
+    return <div>Loading...</div>
+  }
+
   return (
     <>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-[color:var(--color-text)]">
           Courses
         </h2>
-        <Dialog>
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
@@ -108,7 +132,7 @@ export function CourseListWrapper({ initialCourses }: CourseListWrapperProps) {
             <DialogHeader>
               <DialogTitle>Create New Course</DialogTitle>
             </DialogHeader>
-            <CreateCourseForm />
+            <CreateCourseForm onClose={() => setIsOpen(false)} />
           </DialogContent>
         </Dialog>
       </div>
@@ -199,12 +223,11 @@ export function CourseListWrapper({ initialCourses }: CourseListWrapperProps) {
                   <span className="text-sm text-[color:var(--color-text-light)]">
                     {course._count?.enrollments || 0} Students
                   </span>
-                  <UserPlus className="h-4 w-4 text-[color:var(--color-text-lightest)] hover:text-[color:var(--color-text)] transition-colors cursor-pointer" />
                 </div>
                 <div className="flex items-center gap-2">
                   <BookOpen className="h-4 w-4 text-[color:var(--color-text-lightest)]" />
                   <span className="text-sm text-[color:var(--color-text-light)]">
-                    12 Sections
+                    {course._count?.sections || 0} Sections
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -224,39 +247,33 @@ export function CourseListWrapper({ initialCourses }: CourseListWrapperProps) {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row gap-2 border-t border-[color:var(--color-border)] pt-4">
-              {isAdminView && (
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full sm:w-auto border-[color:var(--color-border)] hover:bg-[color:var(--color-surface-hover)]"
-                    >
-                      <UserPlus className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-screen w-full max-h-[95vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>Manage Course Users</DialogTitle>
-                      <DialogDescription>
-                        Add or remove users from this course
-                      </DialogDescription>
-                    </DialogHeader>
-                    <ManageCourseUsers courseId={course.id} />
-                  </DialogContent>
-                </Dialog>
-              )}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full sm:w-auto border-[color:var(--color-border)] hover:bg-[color:var(--color-surface-hover)]"
+                  >
+                    <UserPlus className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-screen w-full max-h-[95vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Manage Course Users</DialogTitle>
+                    <DialogDescription>
+                      Add or remove users from this course
+                    </DialogDescription>
+                  </DialogHeader>
+                  <ManageCourseUsers courseId={course.id} />
+                </DialogContent>
+              </Dialog>
               <Button
                 asChild
                 className="w-full sm:flex-1 lg:w-auto hover:shadow-[var(--shadow)]"
               >
                 <Link
-                  href={
-                    isAdminView
-                      ? `/dashboard/admin/manage-courses/${course.id}/manage-sections`
-                      : `/dashboard/my-courses/${course.id}`
-                  }
+                  href={`/dashboard/admin/manage-courses/${course.id}/manage-sections`}
                 >
-                  {isAdminView ? "Manage Course" : "View Course"}
+                  Edit Course
                   <ArrowUpRight className="h-4 w-4 ml-2" />
                 </Link>
               </Button>

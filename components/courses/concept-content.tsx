@@ -418,6 +418,8 @@ export function ConceptContent({
               {block.type === "text" && (
                 <BlockNoteEditorComponent
                   conceptId={conceptId}
+                  courseId={courseId}
+                  sectionId={concept?.sectionId || ""}
                   initialContent={block.content.textContent}
                   editorMode={editorMode}
                   isTransparent={block.content.isTransparent}
@@ -549,7 +551,6 @@ export function ConceptContent({
                 <ImageUpload
                   value={imageUrl}
                   onChange={(url) => setImageUrl(url || "")}
-                  onRemove={() => setImageUrl("")}
                 />
                 <Button onClick={handleAddImage}>Add Image</Button>
               </div>

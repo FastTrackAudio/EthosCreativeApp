@@ -1,7 +1,7 @@
 "use client"
 
 import { BlockNoteEditor, PartialBlock } from "@blocknote/core"
-import { BlockNoteView, useBlockNote } from "@blocknote/react"
+import { BlockNoteViewRaw, useBlockNote } from "@blocknote/react"
 import "@blocknote/core/style.css"
 
 interface BlockNoteProps {
@@ -23,7 +23,7 @@ export function BlockNote({
 
   return (
     <div className="[&_.bn-container]:p-0 [&_.bn-editor]:min-h-0">
-      <BlockNoteView
+      <BlockNoteViewRaw
         editor={editor}
         theme="light"
         editable={editable}

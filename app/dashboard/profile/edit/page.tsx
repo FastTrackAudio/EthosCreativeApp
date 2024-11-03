@@ -36,6 +36,33 @@ export default async function EditProfilePage() {
     redirect("/auth/login")
   }
 
+  const formattedUser = {
+    ...dbUser,
+    bio: dbUser.bio ?? "",
+    socialLinks: dbUser.socialLinks as {
+      website?: string
+      twitter?: string
+      instagram?: string
+      linkedin?: string
+      github?: string
+      youtube?: string
+    },
+    skills: Array.isArray(dbUser.skills) ? dbUser.skills : [],
+    achievements: dbUser.achievements as {
+      title: string
+      description: string
+      date: string
+    }[],
+    featuredWorks: dbUser.featuredWorks as {
+      title: string
+      description: string
+      link: string
+      image?: string
+    }[],
+    artistType: dbUser.artistType ?? undefined,
+    workType: dbUser.workType ?? undefined,
+  }
+
   return (
     <div className="min-h-screen bg-[color:var(--color-surface)]">
       <div className="border-b border-[color:var(--color-border)] bg-[color:var(--color-surface-elevated)]">
@@ -59,7 +86,7 @@ export default async function EditProfilePage() {
 
       <div className="container max-w-4xl py-8">
         <div className="bg-[color:var(--color-surface-elevated)] rounded-lg border border-[color:var(--color-border)] p-6 shadow-[var(--shadow-sm)]">
-          <EditProfileForm user={dbUser} />
+          <EditProfileForm user={formattedUser} />
         </div>
       </div>
     </div>

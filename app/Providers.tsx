@@ -1,11 +1,22 @@
 "use client"
 
+import { ThemeProvider } from "next-themes"
+import { usePathname } from "next/navigation"
+import { useEffect } from "react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { ThemeProvider } from "@/components/theme-provider"
-import { useState } from "react"
+
+// Create a client
+const queryClient = new QueryClient()
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient())
+  const pathname = usePathname()
+
+  useEffect(() => {
+    // Force a style refresh when pathname changes
+    document.body.style.display = "none"
+    document.body.offsetHeight // Force a reflow
+    document.body.style.display = ""
+  }, [pathname])
 
   return (
     <QueryClientProvider client={queryClient}>
