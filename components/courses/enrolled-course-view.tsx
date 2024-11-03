@@ -1,44 +1,10 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { ArrowRight, CheckCircle2 } from "lucide-react"
-import Image from "next/image"
-import Link from "next/link"
-import { ConceptCompletionStatus } from "./concept-completion-status"
-import { revalidatePath } from "next/cache"
-import { getKindeServerSession } from "kinde-auth-kit"
-import { prisma } from "@/lib/prisma"
-import { params } from "next/navigation"
-
-interface Section {
-  id: string
-  title: string
-  description: string | null
-  concepts: {
-    id: string
-    title: string
-    description: string | null
-    imageUrl: string | null
-    completed: boolean
-  }[]
-}
-
-interface NextConcept {
-  id: string
-  title: string
-  description: string | null
-  imageUrl: string | null
-  sectionId: string
-  sectionTitle: string
-}
+import { NextConceptCard } from "./next-concept-card"
+import { ConceptList } from "./concept-list"
+import { useQuery } from "@tanstack/react-query"
+import axios from "axios"
+import { useMemo } from "react"
 
 interface EnrolledCourseViewProps {
   courseId: string
@@ -51,20 +17,28 @@ interface EnrolledCourseViewProps {
     concepts: {
       id: string
       title: string
-      description?: string | null
-      imageUrl?: string | null
+      description: string | null
+      imageUrl: string | null
       completed: boolean
+      order: number
+      sectionTitle: string
     }[]
   }[]
   nextConcept?: {
     id: string
     title: string
-    description?: string | null
-    imageUrl?: string | null
+    description: string | null
+    imageUrl: string | null
     sectionId: string
     sectionTitle: string
   } | null
-  onCompleteAction: (conceptId: string, courseId: string) => Promise<void>
+}
+
+interface CurriculumEntry {
+  conceptId: string
+  order: number
+  weekId: string
+  isCompleted: boolean
 }
 
 export function EnrolledCourseView({
@@ -73,117 +47,98 @@ export function EnrolledCourseView({
   courseDescription,
   sections,
   nextConcept,
-  onCompleteAction,
 }: EnrolledCourseViewProps) {
+  // Fetch curriculum order
+  const { data: curriculum } = useQuery<CurriculumEntry[]>({
+    queryKey: ["curriculum", courseId],
+    queryFn: async () => {
+      const response = await axios.get(`/api/courses/${courseId}/curriculum`)
+      return response.data
+    },
+  })
+
+  // Flatten all concepts from sections
+  const allConcepts = sections.flatMap((section) =>
+    section.concepts.map((concept) => ({
+      ...concept,
+      sectionTitle: section.title,
+    }))
+  )
+
+  // Group concepts by week and sort within each week
+  const organizedConcepts = useMemo(() => {
+    if (!curriculum) return allConcepts
+
+    // Create a map for quick concept lookup
+    const conceptMap = new Map(
+      allConcepts.map((concept) => [concept.id, concept])
+    )
+
+    // Group by week
+    const weekGroups = curriculum.reduce((acc, curr) => {
+      const concept = conceptMap.get(curr.conceptId)
+      if (!concept) return acc
+
+      const week = curr.weekId
+      if (!acc[week]) acc[week] = []
+
+      acc[week].push({
+        ...concept,
+        curriculumOrder: curr.order,
+        weekId: curr.weekId,
+      })
+      return acc
+    }, {} as Record<string, typeof allConcepts>)
+
+    // Sort within each week and flatten
+    return Object.entries(weekGroups)
+      .sort(([weekA], [weekB]) => weekA.localeCompare(weekB))
+      .flatMap(([_, concepts]) =>
+        concepts.sort((a, b) => a.curriculumOrder - b.curriculumOrder)
+      )
+  }, [curriculum, allConcepts])
+
+  // Add concepts that aren't in curriculum at the end
+  const sortedConcepts = useMemo(() => {
+    if (!curriculum) return allConcepts
+
+    const curriculumConceptIds = new Set(curriculum.map((c) => c.conceptId))
+    const nonCurriculumConcepts = allConcepts.filter(
+      (concept) => !curriculumConceptIds.has(concept.id)
+    )
+
+    return [...organizedConcepts, ...nonCurriculumConcepts]
+  }, [curriculum, organizedConcepts, allConcepts])
+
   return (
-    <div className="container mx-auto p-4 max-w-6xl">
+    <div className="min-h-screen bg-background">
       {/* Course Header */}
-      <div>
-        <h1 className="text-3xl font-bold">{courseTitle}</h1>
-        {courseDescription && (
-          <p className="text-muted-foreground mt-2">{courseDescription}</p>
-        )}
+      <div className="border-border border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-8">
+        <div className="container max-w-5xl">
+          <h1 className="text-3xl font-bold mb-2 text-foreground">
+            {courseTitle}
+          </h1>
+          {courseDescription && (
+            <p className="text-muted-foreground">{courseDescription}</p>
+          )}
+        </div>
       </div>
 
-      {/* Next Concept Card */}
-      {nextConcept && (
-        <Card className="bg-primary text-primary-foreground">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Continue Learning</span>
-              <Button asChild variant="secondary" className="ml-auto" size="sm">
-                <Link
-                  href={`/dashboard/my-courses/${nextConcept.sectionId}/concepts/${nextConcept.id}`}
-                >
-                  Start Next Concept
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            </CardTitle>
-            <CardDescription className="text-primary-foreground/70">
-              Up Next in {nextConcept.sectionTitle}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex gap-6">
-            {nextConcept.imageUrl && (
-              <div className="relative w-[200px] h-[120px] rounded-md overflow-hidden">
-                <Image
-                  src={nextConcept.imageUrl}
-                  alt={nextConcept.title}
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            )}
-            <div className="flex-1">
-              <h3 className="font-semibold mb-2">{nextConcept.title}</h3>
-              {nextConcept.description && (
-                <p className="text-primary-foreground/70 line-clamp-2">
-                  {nextConcept.description}
-                </p>
-              )}
+      {/* Course Content */}
+      <div className="container max-w-5xl py-8">
+        <div className="space-y-8">
+          {/* Next Concept Card */}
+          {nextConcept && (
+            <div className="mb-12">
+              <NextConceptCard concept={nextConcept} courseId={courseId} />
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
 
-      {/* Section Progress Cards */}
-      <div className="grid gap-6 mt-8">
-        {sections.map((section) => (
-          <div key={section.id} className="space-y-4">
-            <h3 className="text-lg font-semibold">{section.title}</h3>
-            {section.description && (
-              <p className="text-muted-foreground">{section.description}</p>
-            )}
-            <div className="grid gap-4">
-              {section.concepts.map((concept) => (
-                <div
-                  key={concept.id}
-                  className="flex items-center justify-between p-4 rounded-lg border bg-card"
-                >
-                  <div className="flex items-center gap-4">
-                    {concept.imageUrl && (
-                      <Image
-                        src={concept.imageUrl}
-                        alt={concept.title}
-                        width={80}
-                        height={80}
-                        className="rounded-md object-cover"
-                      />
-                    )}
-                    <div>
-                      <h3 className="text-lg font-medium">{concept.title}</h3>
-                      {concept.description && (
-                        <p className="text-sm text-muted-foreground">
-                          {concept.description}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <ConceptCompletionStatus
-                      conceptId={concept.id}
-                      isCompleted={concept.completed}
-                      onComplete={async (conceptId) => {
-                        await onCompleteAction(conceptId, courseId)
-                      }}
-                    />
-                    {!concept.completed && (
-                      <Link
-                        href={`/dashboard/my-courses/${courseId}/concepts/${concept.id}`}
-                      >
-                        <Button variant="default" size="sm" className="gap-2">
-                          Learn Concept
-                          <ArrowRight className="h-4 w-4" />
-                        </Button>
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+          {/* Concept List */}
+          <div className="bg-card p-8 rounded-lg border border-border shadow-sm">
+            <ConceptList concepts={sortedConcepts} courseId={courseId} />
           </div>
-        ))}
+        </div>
       </div>
     </div>
   )

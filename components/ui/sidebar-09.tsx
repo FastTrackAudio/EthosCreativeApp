@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import {
   Activity,
@@ -40,12 +40,12 @@ import {
   UserPlus,
   Users,
   Zap,
-} from "lucide-react";
-import { usePathname } from "next/navigation";
-import * as React from "react";
-import { useQuery } from "@tanstack/react-query";
+} from "lucide-react"
+import { usePathname } from "next/navigation"
+import * as React from "react"
+import { useQuery } from "@tanstack/react-query"
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,7 +54,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu"
 import {
   Sidebar,
   SidebarContent,
@@ -66,12 +66,12 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/ui/sidebar";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components";
-import type { KindeUser } from "@kinde-oss/kinde-auth-nextjs/dist/types";
-import Link from "next/link";
-import { isFeatureEnabled, getUserRoles } from "@/utils/featureFlags";
+} from "@/components/ui/sidebar"
+import { ThemeToggle } from "@/components/ui/theme-toggle"
+import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components"
+import type { KindeUser } from "@kinde-oss/kinde-auth-nextjs/dist/types"
+import Link from "next/link"
+import { isFeatureEnabled, getUserRoles } from "@/utils/featureFlags"
 
 // This is sample data
 const data = {
@@ -231,19 +231,19 @@ const data = {
         "To celebrate our recent project success, I'd like to organize a team dinner.\nAre you available next Friday evening? Please let me know your preferences.",
     },
   ],
-};
+}
 
 type SecondaryNavItem = {
-  title: string;
-  icon: React.ElementType;
-  url: string;
-  collapsible?: boolean;
-  items?: SecondaryNavItem[];
-};
+  title: string
+  icon: React.ElementType
+  url: string
+  collapsible?: boolean
+  items?: SecondaryNavItem[]
+}
 
 type SecondaryNavItems = {
-  [key: string]: SecondaryNavItem[];
-};
+  [key: string]: SecondaryNavItem[]
+}
 
 const secondaryNavItems: SecondaryNavItems = {
   "My Courses": [
@@ -288,8 +288,6 @@ const secondaryNavItems: SecondaryNavItems = {
   ],
   Profile: [
     { title: "Edit Profile", icon: Edit, url: "/dashboard/profile/edit" },
-    { title: "Settings", icon: Settings, url: "/dashboard/profile/settings" },
-    { title: "Activity", icon: Activity, url: "/dashboard/profile/activity" },
   ],
   IndieLand: [
     { title: "Explore", icon: Compass, url: "/dashboard/indie-land/explore" },
@@ -398,61 +396,61 @@ const secondaryNavItems: SecondaryNavItems = {
     { title: "Quizzes", icon: FileQuestion, url: "/dashboard/admin/quizzes" },
     { title: "Analytics", icon: BarChart, url: "/dashboard/admin/analytics" },
   ],
-};
+}
 
 export function AppSidebar({
   user,
   ...props
 }: React.ComponentProps<typeof Sidebar> & { user: KindeUser }) {
-  const pathname = usePathname();
-  const { setOpen } = useSidebar();
+  const pathname = usePathname()
+  const { setOpen } = useSidebar()
 
   // Fetch user permissions without logging
   const { data: userPermissions } = useQuery({
     queryKey: ["userPermissions"],
     queryFn: async () => {
-      const response = await fetch("/api/users/permissions");
-      if (!response.ok) throw new Error("Failed to fetch user permissions");
-      const data = await response.json();
-      return data.permissions;
+      const response = await fetch("/api/users/permissions")
+      if (!response.ok) throw new Error("Failed to fetch user permissions")
+      const data = await response.json()
+      return data.permissions
     },
-  });
+  })
 
-  const userRoles = getUserRoles({ permissions: userPermissions });
+  const userRoles = getUserRoles({ permissions: userPermissions })
 
   // Filter nav items based on feature flags without logging
   const filteredNavMain = data.navMain.filter((item) => {
-    const featureName = item.title.toUpperCase().replace(/\s+/g, "_");
-    return isFeatureEnabled(featureName, userRoles);
-  });
+    const featureName = item.title.toUpperCase().replace(/\s+/g, "_")
+    return isFeatureEnabled(featureName, userRoles)
+  })
 
   const [activeItem, setActiveItem] = React.useState(() => {
     return (
       data.navMain.find((item) => pathname.startsWith(item.url)) ||
       data.navMain[0]
-    );
-  });
+    )
+  })
 
   const [activeSecondaryItem, setActiveSecondaryItem] =
     React.useState<SecondaryNavItem | null>(() => {
-      const secondaryItems = secondaryNavItems[activeItem.title] || [];
-      return secondaryItems.find((item) => pathname === item.url) || null;
-    });
+      const secondaryItems = secondaryNavItems[activeItem.title] || []
+      return secondaryItems.find((item) => pathname === item.url) || null
+    })
 
   React.useEffect(() => {
     const newActiveItem =
       data.navMain.find((item) => pathname.startsWith(item.url)) ||
-      data.navMain[0];
-    setActiveItem(newActiveItem);
+      data.navMain[0]
+    setActiveItem(newActiveItem)
 
-    const newSecondaryItems = secondaryNavItems[newActiveItem.title] || [];
+    const newSecondaryItems = secondaryNavItems[newActiveItem.title] || []
     const newActiveSecondaryItem =
-      newSecondaryItems.find((item) => pathname === item.url) || null;
-    setActiveSecondaryItem(newActiveSecondaryItem);
-  }, [pathname]);
+      newSecondaryItems.find((item) => pathname === item.url) || null
+    setActiveSecondaryItem(newActiveSecondaryItem)
+  }, [pathname])
 
   if (!user) {
-    return null;
+    return null
   }
 
   return (
@@ -494,10 +492,10 @@ export function AppSidebar({
                           hidden: false,
                         }}
                         onClick={() => {
-                          setActiveItem(item);
+                          setActiveItem(item)
                           setActiveSecondaryItem(
                             secondaryNavItems[item.title]?.[0] || null
-                          );
+                          )
                         }}
                         isActive={activeItem.title === item.title}
                         className="px-2.5 md:px-2"
@@ -540,8 +538,8 @@ export function AppSidebar({
                     <Link href={item.url} passHref legacyBehavior>
                       <SidebarMenuButton
                         onClick={() => {
-                          setActiveSecondaryItem(item);
-                          setOpen(true);
+                          setActiveSecondaryItem(item)
+                          setOpen(true)
                         }}
                         isActive={pathname === item.url}
                       >
@@ -557,11 +555,11 @@ export function AppSidebar({
         </SidebarContent>
       </Sidebar>
     </Sidebar>
-  );
+  )
 }
 
 function NavUser({ user }: { user: KindeUser }) {
-  const { isMobile } = useSidebar();
+  const { isMobile } = useSidebar()
 
   return (
     <SidebarMenu>
@@ -648,5 +646,5 @@ function NavUser({ user }: { user: KindeUser }) {
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
-  );
+  )
 }

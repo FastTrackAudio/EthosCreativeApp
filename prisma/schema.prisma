@@ -15,16 +15,55 @@ model User {
   lastName      String
   createdAt     DateTime         @default(now())
   profileImage  String?
-  artistPageUrl String?
+  customUrl     String?          @unique  // For admin/dashboard URL
+  artistPageUrl String?          @unique  // For public artist profile URL
   dateJoined    DateTime         @default(now())
   enrolled      Boolean          @default(false)
   permissions   String           @default("User")
   updatedAt     DateTime         @default(now()) @updatedAt
+
+  // Artist Profile Fields
+  artistType      ArtistType?        // Using enum
+  workType        CreativeWorkType?  // Using enum
+  bio             String?        @db.Text
+  socialLinks     Json?          @default("{}")
+  skills          String[]       @default([])
+  achievements    Json?          @default("[]")
+  featuredWorks   Json?          @default("[]")
+
+  // Relations
   courses       Course[]
   enrollments   Enrollment[]
   projects      Project[]
   quizzes       Quiz[]
   curriculum    UserCurriculum[]
+  conceptCompletions  ConceptCompletion[]
+  sectionCompletions  SectionCompletion[]
+  projectCompletions  ProjectCompletion[]
+  quizCompletions     QuizCompletion[]
+}
+
+enum ArtistType {
+  VISIONARY
+  CONSUMMATE_PROFESSIONAL
+  ANALYZER
+  TECH_ARTIST
+  ENTERTAINER
+  MAVERICK
+  DREAMER
+  FEELER
+  TORTURED
+  SOLO
+}
+
+enum CreativeWorkType {
+  ENTREPRENEUR
+  TEAM_PLAYER
+  CONNECTOR_ORGANIZER
+  FINISHER
+  ENTHUSIASTIC_FACILITATOR
+  CREATIVE_INITIATOR
+  COLLABORATOR
 }
 
 model Course {
@@ -50,6 +89,7 @@ model Section {
   order       Int       @default(0)
   concepts    Concept[]
   course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  completions         SectionCompletion[]
 }
 
 model Concept {
@@ -72,6 +112,7 @@ model Concept {
   quiz        Quiz?            @relation(fields: [quizId], references: [id])
   section     Section          @relation(fields: [sectionId], references: [id], onDelete: Cascade)
   curriculum  UserCurriculum[]
+  completions         ConceptCompletion[]
 }
 
 model Project {
@@ -82,6 +123,7 @@ model Project {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  completions         ProjectCompletion[]
 }
 
 model Quiz {
@@ -94,6 +136,7 @@ model Quiz {
   concepts    Concept[]
   questions   Question[]
   user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  completions         QuizCompletion[]
 }
 
 model Question {
@@ -141,4 +184,65 @@ model UserCurriculum {
   @@index([userId, courseId])
   @@index([courseId])
   @@index([conceptId])
+}
+
+model ConceptCompletion {
+  id        String   @id @default(cuid())
+  userId    String
+  conceptId String
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  concept   Concept  @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, conceptId])
+  @@index([userId])
+  @@index([conceptId])
+}
+
+model SectionCompletion {
+  id        String   @id @default(cuid())
+  userId    String
+  sectionId String
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  section   Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sectionId])
+  @@index([userId])
+  @@index([sectionId])
+}
+
+model ProjectCompletion {
+  id        String   @id @default(cuid())
+  userId    String
+  projectId String
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId])
+  @@index([userId])
+  @@index([projectId])
+}
+
+model QuizCompletion {
+  id        String   @id @default(cuid())
+  userId    String
+  quizId    String
+  completed Boolean  @default(false)
+  score     Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, quizId])
+  @@index([userId])
+  @@index([quizId])
 }

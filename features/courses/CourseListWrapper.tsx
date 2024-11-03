@@ -53,6 +53,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import axios from "axios"
 import { CreateCourseForm } from "./CreateCourseForm"
+import { formatDate } from "@/lib/utils"
 
 interface ExtendedCourse extends Course {
   _count?: {
@@ -93,7 +94,9 @@ export function CourseListWrapper({ initialCourses }: CourseListWrapperProps) {
   return (
     <>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Courses</h2>
+        <h2 className="text-2xl font-bold text-[color:var(--color-text)]">
+          Courses
+        </h2>
         <Dialog>
           <DialogTrigger asChild>
             <Button>
@@ -112,18 +115,27 @@ export function CourseListWrapper({ initialCourses }: CourseListWrapperProps) {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {courses.map((course: ExtendedCourse) => (
-          <Card key={course.id} className="flex flex-col">
+          <Card
+            key={course.id}
+            className="flex flex-col bg-[color:var(--color-surface-elevated)] border-[color:var(--color-border)] hover:border-[color:var(--color-border-contrasted)] transition-all duration-[var(--transition)] shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow)]"
+          >
             <CardHeader>
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
-                  <CardTitle>{course.title}</CardTitle>
-                  <CardDescription className="line-clamp-2">
+                  <CardTitle className="text-[color:var(--color-text)]">
+                    {course.title}
+                  </CardTitle>
+                  <CardDescription className="text-[color:var(--color-text-light)] line-clamp-2">
                     {course.description}
                   </CardDescription>
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-[color:var(--color-text-lighter)] hover:text-[color:var(--color-text)]"
+                    >
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -183,47 +195,42 @@ export function CourseListWrapper({ initialCourses }: CourseListWrapperProps) {
             <CardContent className="flex-1">
               <div className="grid grid-cols-2 gap-4 mt-4">
                 <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">
+                  <Users className="h-4 w-4 text-[color:var(--color-text-lightest)]" />
+                  <span className="text-sm text-[color:var(--color-text-light)]">
                     {course._count?.enrollments || 0} Students
                   </span>
-                  <Dialog>
-                    <DialogTrigger>
-                      <UserPlus className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
-                    </DialogTrigger>
-                    <DialogContent className="max-w-screen w-full max-h-[95vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>Manage Course Users</DialogTitle>
-                        <DialogDescription>
-                          Add or remove users from this course
-                        </DialogDescription>
-                      </DialogHeader>
-                      <ManageCourseUsers courseId={course.id} />
-                    </DialogContent>
-                  </Dialog>
+                  <UserPlus className="h-4 w-4 text-[color:var(--color-text-lightest)] hover:text-[color:var(--color-text)] transition-colors cursor-pointer" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <BookOpen className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">12 Sections</span>
+                  <BookOpen className="h-4 w-4 text-[color:var(--color-text-lightest)]" />
+                  <span className="text-sm text-[color:var(--color-text-light)]">
+                    12 Sections
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">
-                    {new Date(course.createdAt).toLocaleDateString()}
+                  <Calendar className="h-4 w-4 text-[color:var(--color-text-lightest)]" />
+                  <span className="text-sm text-[color:var(--color-text-light)]">
+                    {formatDate(course.createdAt)}
                   </span>
                 </div>
                 <div>
-                  <Badge variant={course.published ? "default" : "secondary"}>
+                  <Badge
+                    variant={course.published ? "default" : "secondary"}
+                    className="bg-[color:var(--color-surface)] text-[color:var(--color-text-light)]"
+                  >
                     {course.published ? "Published" : "Draft"}
                   </Badge>
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="flex flex-col sm:flex-row gap-2">
+            <CardFooter className="flex flex-col sm:flex-row gap-2 border-t border-[color:var(--color-border)] pt-4">
               {isAdminView && (
                 <Dialog>
                   <DialogTrigger asChild>
-                    <Button variant="outline" className="w-full sm:w-auto">
+                    <Button
+                      variant="outline"
+                      className="w-full sm:w-auto border-[color:var(--color-border)] hover:bg-[color:var(--color-surface-hover)]"
+                    >
                       <UserPlus className="h-4 w-4" />
                     </Button>
                   </DialogTrigger>
@@ -238,7 +245,10 @@ export function CourseListWrapper({ initialCourses }: CourseListWrapperProps) {
                   </DialogContent>
                 </Dialog>
               )}
-              <Button asChild className="w-full sm:flex-1 lg:w-auto">
+              <Button
+                asChild
+                className="w-full sm:flex-1 lg:w-auto hover:shadow-[var(--shadow)]"
+              >
                 <Link
                   href={
                     isAdminView

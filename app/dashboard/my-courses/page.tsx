@@ -1,15 +1,15 @@
-import React from "react";
-import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
-import { StudentCourseListWrapper } from "@/features/courses/StudentCourseListWrapper";
-import prisma from "@/app/utils/db";
-import { redirect } from "next/navigation";
+import React from "react"
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server"
+import { StudentCourseListWrapper } from "@/features/courses/StudentCourseListWrapper"
+import prisma from "@/app/utils/db"
+import { redirect } from "next/navigation"
 
 export default async function MyCourses() {
-  const { getUser } = getKindeServerSession();
-  const user = await getUser();
+  const { getUser } = getKindeServerSession()
+  const user = await getUser()
 
   if (!user) {
-    redirect("/auth/login");
+    redirect("/auth/login")
   }
 
   // Fetch enrolled courses with all necessary data
@@ -43,7 +43,7 @@ export default async function MyCourses() {
         take: 1,
       },
     },
-  });
+  })
 
   // Transform the data to match the StudentCourseListWrapper interface
   const transformedCourses = enrolledCourses.map((course) => ({
@@ -61,7 +61,7 @@ export default async function MyCourses() {
       0
     ),
     studentCount: course._count.enrollments,
-  }));
+  }))
 
   return (
     <div className="p-6 space-y-6">
@@ -73,5 +73,5 @@ export default async function MyCourses() {
       </div>
       <StudentCourseListWrapper initialCourses={transformedCourses} />
     </div>
-  );
+  )
 }

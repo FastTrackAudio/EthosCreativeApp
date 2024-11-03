@@ -1,16 +1,20 @@
 import { createUploadthing, type FileRouter } from "uploadthing/next"
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server"
 
 const f = createUploadthing()
 
 export const ourFileRouter = {
   imageUploader: f({ image: { maxFileSize: "4MB" } })
     .middleware(async () => {
-      return { timestamp: Date.now() }
+      const { getUser } = getKindeServerSession()
+      const user = await getUser()
+
+      if (!user) throw new Error("Unauthorized")
+
+      return { userId: user.id }
     })
     .onUploadComplete(async ({ metadata, file }) => {
-      console.log("Upload complete for userId:", metadata.timestamp)
-      console.log("File URL:", file.url)
-      return { url: file.url }
+      return { uploadedBy: metadata.userId, url: file.url }
     }),
 } satisfies FileRouter
 

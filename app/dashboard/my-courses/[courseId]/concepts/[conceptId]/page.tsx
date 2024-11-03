@@ -116,8 +116,8 @@ export default async function ConceptViewerPage({
           </div>
 
           <ConceptCompleteButton
-            onComplete={handleComplete}
-            isCompleted={isCompleted}
+            conceptId={params.conceptId}
+            courseId={courseId}
           />
         </div>
       </div>

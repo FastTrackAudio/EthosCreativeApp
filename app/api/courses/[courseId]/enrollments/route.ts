@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import prisma from "@/app/utils/db";
+import { NextResponse } from "next/server"
+import prisma from "@/app/utils/db"
 
 export async function GET(
   request: Request,
@@ -21,11 +21,11 @@ export async function GET(
           },
         },
       },
-    });
-    return NextResponse.json(enrollments);
+    })
+    return NextResponse.json(enrollments)
   } catch (error) {
-    console.error("[ENROLLMENTS_GET]", error);
-    return new NextResponse("Internal Error", { status: 500 });
+    console.error("[ENROLLMENTS_GET]", error)
+    return new NextResponse("Internal Error", { status: 500 })
   }
 }
 
@@ -34,7 +34,7 @@ export async function POST(
   { params }: { params: { courseId: string } }
 ) {
   try {
-    const { userId } = await request.json();
+    const { userId } = await request.json()
     const enrollment = await prisma.enrollment.create({
       data: {
         userId,
@@ -43,11 +43,11 @@ export async function POST(
       include: {
         user: true,
       },
-    });
-    return NextResponse.json(enrollment);
+    })
+    return NextResponse.json(enrollment)
   } catch (error) {
-    console.error("[ENROLLMENTS_POST]", error);
-    return new NextResponse("Internal Error", { status: 500 });
+    console.error("[ENROLLMENTS_POST]", error)
+    return new NextResponse("Internal Error", { status: 500 })
   }
 }
 
@@ -56,7 +56,7 @@ export async function DELETE(
   { params }: { params: { courseId: string } }
 ) {
   try {
-    const { userId } = await request.json();
+    const { userId } = await request.json()
     await prisma.enrollment.delete({
       where: {
         userId_courseId: {
@@ -64,10 +64,10 @@ export async function DELETE(
           courseId: params.courseId,
         },
       },
-    });
-    return new NextResponse(null, { status: 204 });
+    })
+    return new NextResponse(null, { status: 204 })
   } catch (error) {
-    console.error("[ENROLLMENTS_DELETE]", error);
-    return new NextResponse("Internal Error", { status: 500 });
+    console.error("[ENROLLMENTS_DELETE]", error)
+    return new NextResponse("Internal Error", { status: 500 })
   }
 }

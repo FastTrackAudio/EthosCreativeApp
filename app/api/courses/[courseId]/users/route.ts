@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import prisma from "@/app/utils/db";
+import { NextResponse } from "next/server"
+import prisma from "@/app/utils/db"
 
 export async function GET(
   request: Request,
@@ -24,17 +24,17 @@ export async function GET(
           },
         },
       },
-    });
+    })
 
     const transformedUsers = users.map((user) => ({
       ...user,
       enrollment: user.enrollments[0] || null,
       enrollments: undefined,
-    }));
+    }))
 
-    return NextResponse.json(transformedUsers);
+    return NextResponse.json(transformedUsers)
   } catch (error) {
-    console.error("[COURSE_USERS_GET]", error);
-    return new NextResponse("Internal Error", { status: 500 });
+    console.error("[COURSE_USERS_GET]", error)
+    return new NextResponse("Internal Error", { status: 500 })
   }
 }

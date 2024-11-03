@@ -1,13 +1,13 @@
-import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
-import prisma from "@/app/utils/db";
-import { NextResponse } from "next/server";
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server"
+import prisma from "@/app/utils/db"
+import { NextResponse } from "next/server"
 
 export async function GET() {
-  const { getUser } = getKindeServerSession();
-  const user = await getUser();
+  const { getUser } = getKindeServerSession()
+  const user = await getUser()
 
   if (!user?.id) {
-    return new NextResponse("Unauthorized", { status: 401 });
+    return new NextResponse("Unauthorized", { status: 401 })
   }
 
   try {
@@ -34,7 +34,7 @@ export async function GET() {
       orderBy: {
         enrolledAt: "desc",
       },
-    });
+    })
 
     // Transform the data to match the expected format
     const transformedCourses = enrolledCourses.map((enrollment) => ({
@@ -50,11 +50,11 @@ export async function GET() {
         0
       ),
       studentCount: enrollment.course.enrollments.length,
-    }));
+    }))
 
-    return NextResponse.json(transformedCourses);
+    return NextResponse.json(transformedCourses)
   } catch (error) {
-    console.error("[ENROLLED_COURSES_GET]", error);
-    return new NextResponse("Internal Error", { status: 500 });
+    console.error("[ENROLLED_COURSES_GET]", error)
+    return new NextResponse("Internal Error", { status: 500 })
   }
 }

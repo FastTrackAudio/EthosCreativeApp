@@ -1,7 +1,7 @@
-"use client";
+"use client"
 
-import React from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import React from "react"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import {
   Table,
   TableBody,
@@ -9,65 +9,65 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import Link from "next/link";
-import { format } from "date-fns";
-import { BookOpen } from "lucide-react";
-import axios from "axios";
+} from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
+import { format } from "date-fns"
+import { BookOpen } from "lucide-react"
+import axios from "axios"
 
 interface User {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  profileImage: string | null;
-  artistPageUrl: string | null;
+  id: string
+  firstName: string
+  lastName: string
+  email: string
+  profileImage: string | null
+  artistPageUrl: string | null
   enrollment: {
-    id: string;
-    enrolledAt: string;
-  } | null;
+    id: string
+    enrolledAt: string
+  } | null
 }
 
 interface ManageCourseUsersProps {
-  courseId: string;
+  courseId: string
 }
 
 export function ManageCourseUsers({ courseId }: ManageCourseUsersProps) {
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
 
   const { data: users, isLoading } = useQuery<User[]>({
     queryKey: ["courseUsers", courseId],
     queryFn: async () => {
-      const response = await axios.get(`/api/courses/${courseId}/users`);
-      return response.data;
+      const response = await axios.get(`/api/courses/${courseId}/users`)
+      return response.data
     },
-  });
+  })
 
   const toggleEnrollmentMutation = useMutation({
     mutationFn: async ({
       userId,
       isEnrolled,
     }: {
-      userId: string;
-      isEnrolled: boolean;
+      userId: string
+      isEnrolled: boolean
     }) => {
       if (!isEnrolled) {
-        await axios.post(`/api/courses/${courseId}/enrollments`, { userId });
+        await axios.post(`/api/courses/${courseId}/enrollments`, { userId })
       } else {
         await axios.delete(`/api/courses/${courseId}/enrollments`, {
           data: { userId },
-        });
+        })
       }
     },
     onMutate: async ({ userId, isEnrolled }) => {
-      await queryClient.cancelQueries({ queryKey: ["courseUsers", courseId] });
+      await queryClient.cancelQueries({ queryKey: ["courseUsers", courseId] })
       const previousUsers = queryClient.getQueryData<User[]>([
         "courseUsers",
         courseId,
-      ]);
+      ])
 
       if (previousUsers) {
         queryClient.setQueryData<User[]>(
@@ -82,30 +82,30 @@ export function ManageCourseUsers({ courseId }: ManageCourseUsersProps) {
                       id: "temp",
                       enrolledAt: new Date().toISOString(),
                     },
-              };
+              }
             }
-            return user;
+            return user
           })
-        );
+        )
       }
 
-      return { previousUsers };
+      return { previousUsers }
     },
     onError: (err, variables, context) => {
       if (context?.previousUsers) {
         queryClient.setQueryData(
           ["courseUsers", courseId],
           context.previousUsers
-        );
+        )
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["courseUsers", courseId] });
-      queryClient.invalidateQueries({ queryKey: ["courses"] });
+      queryClient.invalidateQueries({ queryKey: ["courseUsers", courseId] })
+      queryClient.invalidateQueries({ queryKey: ["courses"] })
     },
-  });
+  })
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <div>Loading...</div>
 
   return (
     <div className="rounded-md border max-w-full overflow-x-auto p-20">
@@ -190,5 +190,5 @@ export function ManageCourseUsers({ courseId }: ManageCourseUsersProps) {
         </TableBody>
       </Table>
     </div>
-  );
+  )
 }

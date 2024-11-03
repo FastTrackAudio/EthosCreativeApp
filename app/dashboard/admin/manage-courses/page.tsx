@@ -1,20 +1,20 @@
-import React from "react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { getAdminCourses } from "./page.server";
-import { CourseListWrapper } from "@/features/courses/CourseListWrapper";
-import { Input } from "@/components/ui/input";
-import { BookOpen, Plus, Search, SlidersHorizontal } from "lucide-react";
+import React from "react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { getAdminCourses } from "./page.server"
+import { CourseListWrapper } from "@/features/courses/CourseListWrapper"
+import { Input } from "@/components/ui/input"
+import { BookOpen, Plus, Search, SlidersHorizontal } from "lucide-react"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/select"
 
 export default async function ManageCourses() {
-  const initialCourses = await getAdminCourses();
+  const initialCourses = await getAdminCourses()
 
   return (
     <div className="p-6 space-y-6">
@@ -25,12 +25,6 @@ export default async function ManageCourses() {
             Create and manage all courses in the platform
           </p>
         </div>
-        <Link href="/dashboard/admin/manage-courses/create">
-          <Button className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Create New Course
-          </Button>
-        </Link>
       </div>
 
       <div className="flex items-center gap-4 flex-wrap">
@@ -67,5 +61,5 @@ export default async function ManageCourses() {
 
       <CourseListWrapper initialCourses={initialCourses} />
     </div>
-  );
+  )
 }
