@@ -261,6 +261,7 @@ export default function ManageSectionsPage({
                 onCreateCard={(data) => createConcept.mutate(data)}
                 onUpdateCard={(data) => updateConcept.mutate(data)}
                 onDeleteCard={(id) => deleteConcept.mutate(id)}
+                cardUrlPattern="/dashboard/admin/manage-courses/:courseId/sections/:sectionId/concepts/:conceptId"
               />
             </div>
           </div>

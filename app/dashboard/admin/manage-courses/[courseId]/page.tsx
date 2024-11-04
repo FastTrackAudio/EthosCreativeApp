@@ -1,7 +1,7 @@
 import React from "react"
 import { notFound } from "next/navigation"
 import prisma from "@/app/utils/db"
-import { KanbanBoard } from "@/components/kanban-board/KanbanBoard"
+
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { Pencil, ArrowLeft } from "lucide-react"
@@ -66,7 +66,6 @@ export default async function AdminCourseManagementPage({
             Manage sections and concepts using the Kanban board below
           </p>
         </div>
-        <KanbanBoard courseId={course.id} isAdminView={true} />
       </div>
     </div>
   )

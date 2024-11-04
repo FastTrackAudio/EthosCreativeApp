@@ -63,6 +63,7 @@ interface KanbanBoardProps {
   courseId?: string
   isCurriculumView?: boolean
   curriculumWeeks?: CurriculumWeek[]
+  cardUrlPattern?: string
   onCreateSection: (data: { title: string; order: number }) => void
   onUpdateSection: (data: Partial<KanbanSection> & { id: string }) => void
   onDeleteSection: (id: string) => void
@@ -83,6 +84,7 @@ export function KanbanBoard({
   sectionWidth = "min-w-[300px]",
   curriculumWeeks = [],
   editorMode = true,
+  cardUrlPattern,
   onCreateSection,
   onUpdateSection,
   onDeleteSection,
@@ -292,6 +294,16 @@ export function KanbanBoard({
                                       card.id
                                     )}
                                     editorMode={editorMode}
+                                    cardUrl={
+                                      cardUrlPattern
+                                        ? cardUrlPattern
+                                            .replace(":conceptId", card.id)
+                                            .replace(
+                                              ":sectionId",
+                                              card.sectionId
+                                            )
+                                        : undefined
+                                    }
                                     onAddToCurriculum={onAddToCurriculum}
                                     onRemoveFromCurriculum={
                                       onRemoveFromCurriculum

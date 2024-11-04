@@ -86,6 +86,7 @@ export default function ManageUserCurriculumPage({ params }: PageProps) {
               createdAt: item.concept.createdAt || new Date(),
               updatedAt: item.concept.updatedAt || new Date(),
               order: item.concept.order,
+              courseId: item.concept.courseId,
             })
             return acc
           },
