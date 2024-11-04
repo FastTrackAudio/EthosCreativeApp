@@ -70,17 +70,15 @@ export function StudentCourseListWrapper({
     <div className="~space-y-4/8">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ~gap-4/8 auto-rows-fr">
         {courses.map((course) => (
-          <CourseCard key={course.id}>
-            <CourseCardHeader>
+          <Card key={course.id} className="flex flex-col">
+            <CardHeader>
               <div className="~space-y-2/4">
-                <CourseCardTitle>{course.title}</CourseCardTitle>
-                <CourseCardDescription>
-                  {course.description}
-                </CourseCardDescription>
+                <CardTitle>{course.title}</CardTitle>
+                <CardDescription>{course.description}</CardDescription>
               </div>
-            </CourseCardHeader>
+            </CardHeader>
 
-            <CourseCardContent>
+            <CardContent>
               <div className="grid grid-cols-2 ~gap-3/4">
                 <div className="flex items-center ~gap-2/3">
                   <BookOpen className="~w-4/5 ~h-4/5 text-muted-foreground" />
@@ -115,8 +113,20 @@ export function StudentCourseListWrapper({
                 </div>
                 <Progress value={0} className="~h-2/3" />
               </div>
-            </CourseCardContent>
-          </CourseCard>
+            </CardContent>
+
+            <CardFooter className="mt-auto pt-6">
+              <Button asChild className="w-full">
+                <Link
+                  href={`/dashboard/my-courses/${course.id}`}
+                  className="flex items-center justify-center gap-2"
+                >
+                  Continue Learning
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+            </CardFooter>
+          </Card>
         ))}
       </div>
     </div>
