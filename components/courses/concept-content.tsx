@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
 import {
   Save,
   CheckCircle,
@@ -16,14 +16,14 @@ import {
   Trash2,
   Edit,
   EyeOff,
-} from "lucide-react"
-import { toast } from "sonner"
-import axios from "axios"
-import { BlockNoteEditorComponent } from "@/components/BlockNoteEditor"
-import { CustomVideoPlayer } from "@/features/video-player/VideoPlayer"
-import { AudioPlayer } from "@/features/audio-player/AudioPlayer"
-import { ResizableImage } from "@/components/ui/resizable-image"
-import { ResizableVideo } from "@/components/ui/resizable-video"
+} from "lucide-react";
+import { toast } from "sonner";
+import axios from "axios";
+import { BlockNoteEditorComponent } from "@/components/BlockNoteEditor";
+import { CustomVideoPlayer } from "@/features/video-player/VideoPlayer";
+import { AudioPlayer } from "@/features/audio-player/AudioPlayer";
+import { ResizableImage } from "@/components/ui/resizable-image";
+import { ResizableVideo } from "@/components/ui/resizable-video";
 import {
   Dialog,
   DialogContent,
@@ -31,17 +31,18 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogDescription,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { ImageUpload } from "@/components/ui/image-upload"
-import { Skeleton } from "@/components/ui/skeleton"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ImageUpload } from "@/components/ui/image-upload";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 interface ConceptContentProps {
-  conceptId: string
-  courseId: string
-  editorMode?: boolean
+  conceptId: string;
+  courseId: string;
+  editorMode?: boolean;
 }
 
 export function ConceptContent({
@@ -49,37 +50,39 @@ export function ConceptContent({
   courseId,
   editorMode = false,
 }: ConceptContentProps) {
-  const queryClient = useQueryClient()
-  const [contentBlocks, setContentBlocks] = useState<any[]>([])
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const queryClient = useQueryClient();
+  const [contentBlocks, setContentBlocks] = useState<any[]>([]);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Add state for media dialogs
-  const [showVideoDialog, setShowVideoDialog] = useState(false)
-  const [showAudioDialog, setShowAudioDialog] = useState(false)
-  const [showImageDialog, setShowImageDialog] = useState(false)
+  const [showVideoDialog, setShowVideoDialog] = useState(false);
+  const [showAudioDialog, setShowAudioDialog] = useState(false);
+  const [showImageDialog, setShowImageDialog] = useState(false);
 
   // Add state for media content
-  const [videoUrl, setVideoUrl] = useState("")
-  const [audioUrl, setAudioUrl] = useState("")
-  const [audioTitle, setAudioTitle] = useState("")
-  const [imageUrl, setImageUrl] = useState("")
-  const [imageTitle, setImageTitle] = useState("")
+  const [videoUrl, setVideoUrl] = useState("");
+  const [audioUrl, setAudioUrl] = useState("");
+  const [audioTitle, setAudioTitle] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [imageTitle, setImageTitle] = useState("");
+
+  const router = useRouter();
 
   // Fetch concept data
   const { data: concept, isLoading } = useQuery({
     queryKey: ["concept", conceptId],
     queryFn: async () => {
-      const response = await axios.get(`/api/concepts/${conceptId}`)
-      const data = response.data
+      const response = await axios.get(`/api/concepts/${conceptId}`);
+      const data = response.data;
 
       // Parse content if it's a string
       if (typeof data.content === "string") {
-        data.content = JSON.parse(data.content)
+        data.content = JSON.parse(data.content);
       }
 
-      return data
+      return data;
     },
-  })
+  });
 
   // Parse the initial content when concept data is loaded
   useEffect(() => {
@@ -88,15 +91,15 @@ export function ConceptContent({
         const parsedContent =
           typeof concept.content === "string"
             ? JSON.parse(concept.content)
-            : concept.content
+            : concept.content;
 
-        setContentBlocks(parsedContent.blocks || [])
+        setContentBlocks(parsedContent.blocks || []);
       } catch (error) {
-        console.error("Error parsing content:", error)
-        setContentBlocks([])
+        console.error("Error parsing content:", error);
+        setContentBlocks([]);
       }
     }
-  }, [concept])
+  }, [concept]);
 
   // Save changes mutation
   const saveMutation = useMutation({
@@ -104,27 +107,27 @@ export function ConceptContent({
       const content = {
         version: "1",
         blocks: contentBlocks,
-      }
+      };
 
       await axios.patch(`/api/concepts/${conceptId}`, {
         content: JSON.stringify(content), // Save as stringified JSON
-      })
+      });
     },
     onSuccess: () => {
-      toast.success("Changes saved successfully")
-      setHasUnsavedChanges(false)
-      queryClient.invalidateQueries({ queryKey: ["concept", conceptId] })
+      toast.success("Changes saved successfully");
+      setHasUnsavedChanges(false);
+      queryClient.invalidateQueries({ queryKey: ["concept", conceptId] });
     },
     onError: () => {
-      toast.error("Failed to save changes")
+      toast.error("Failed to save changes");
     },
-  })
+  });
 
   // Handlers for adding content
   const handleAddBlock = (newBlock: any) => {
-    setContentBlocks([...contentBlocks, newBlock])
-    setHasUnsavedChanges(true)
-  }
+    setContentBlocks([...contentBlocks, newBlock]);
+    setHasUnsavedChanges(true);
+  };
 
   const handleAddVideo = () => {
     if (videoUrl) {
@@ -136,13 +139,13 @@ export function ConceptContent({
           url: videoUrl,
           size: { width: "100%", height: "auto" },
         },
-      }
-      setContentBlocks([...contentBlocks, newBlock])
-      setHasUnsavedChanges(true)
-      setVideoUrl("")
-      setShowVideoDialog(false)
+      };
+      setContentBlocks([...contentBlocks, newBlock]);
+      setHasUnsavedChanges(true);
+      setVideoUrl("");
+      setShowVideoDialog(false);
     }
-  }
+  };
 
   const handleAddAudio = () => {
     if (audioUrl) {
@@ -154,14 +157,14 @@ export function ConceptContent({
           url: audioUrl,
           title: audioTitle,
         },
-      }
-      setContentBlocks([...contentBlocks, newBlock])
-      setHasUnsavedChanges(true)
-      setAudioUrl("")
-      setAudioTitle("")
-      setShowAudioDialog(false)
+      };
+      setContentBlocks([...contentBlocks, newBlock]);
+      setHasUnsavedChanges(true);
+      setAudioUrl("");
+      setAudioTitle("");
+      setShowAudioDialog(false);
     }
-  }
+  };
 
   const handleAddImage = () => {
     if (imageUrl) {
@@ -174,14 +177,14 @@ export function ConceptContent({
           title: imageTitle,
           size: { width: "100%", height: "auto" },
         },
-      }
-      setContentBlocks([...contentBlocks, newBlock])
-      setHasUnsavedChanges(true)
-      setImageUrl("")
-      setImageTitle("")
-      setShowImageDialog(false)
+      };
+      setContentBlocks([...contentBlocks, newBlock]);
+      setHasUnsavedChanges(true);
+      setImageUrl("");
+      setImageTitle("");
+      setShowImageDialog(false);
     }
-  }
+  };
 
   const handleAddText = () => {
     const newBlock = {
@@ -192,31 +195,31 @@ export function ConceptContent({
         textContent: "",
         isTransparent: false,
       },
-    }
-    setContentBlocks([...contentBlocks, newBlock])
-    setHasUnsavedChanges(true)
-  }
+    };
+    setContentBlocks([...contentBlocks, newBlock]);
+    setHasUnsavedChanges(true);
+  };
 
   const handleMoveBlock = (index: number, direction: "up" | "down") => {
-    const newBlocks = [...contentBlocks]
-    const newIndex = direction === "up" ? index - 1 : index + 1
-    if (newIndex < 0 || newIndex >= newBlocks.length) return
+    const newBlocks = [...contentBlocks];
+    const newIndex = direction === "up" ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= newBlocks.length) return;
 
-    const [movedBlock] = newBlocks.splice(index, 1)
-    newBlocks.splice(newIndex, 0, movedBlock)
-    setContentBlocks(newBlocks)
-    setHasUnsavedChanges(true)
-  }
+    const [movedBlock] = newBlocks.splice(index, 1);
+    newBlocks.splice(newIndex, 0, movedBlock);
+    setContentBlocks(newBlocks);
+    setHasUnsavedChanges(true);
+  };
 
   const handleDeleteBlock = (index: number) => {
-    const newBlocks = [...contentBlocks]
-    newBlocks.splice(index, 1)
-    setContentBlocks(newBlocks)
-    setHasUnsavedChanges(true)
-  }
+    const newBlocks = [...contentBlocks];
+    newBlocks.splice(index, 1);
+    setContentBlocks(newBlocks);
+    setHasUnsavedChanges(true);
+  };
 
   const handleToggleTransparent = (index: number) => {
-    const newBlocks = [...contentBlocks]
+    const newBlocks = [...contentBlocks];
     if (newBlocks[index].type === "text") {
       newBlocks[index] = {
         ...newBlocks[index],
@@ -224,11 +227,43 @@ export function ConceptContent({
           ...newBlocks[index].content,
           isTransparent: !newBlocks[index].content.isTransparent,
         },
-      }
-      setContentBlocks(newBlocks)
-      setHasUnsavedChanges(true)
+      };
+      setContentBlocks(newBlocks);
+      setHasUnsavedChanges(true);
     }
-  }
+  };
+
+  const updateConceptMutation = useMutation({
+    mutationFn: async (updatedContent: string) => {
+      const response = await fetch(`/api/concepts/${conceptId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ content: updatedContent }),
+      });
+      if (!response.ok) {
+        throw new Error("Failed to update concept");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast.success("Concept saved successfully", {
+        duration: 2000,
+        onAutoClose: () => {
+          queryClient.invalidateQueries({ queryKey: ["concepts", courseId] });
+          // Use the courseId passed as prop
+          router.push(
+            `/dashboard/admin/manage-courses/${courseId}/manage-sections`
+          );
+        },
+      });
+    },
+    onError: (error) => {
+      toast.error("Failed to save concept");
+      console.error("Error saving concept:", error);
+    },
+  });
 
   return (
     <div className="container mx-auto p-4 max-w-6xl">
@@ -310,16 +345,16 @@ export function ConceptContent({
                             <Input
                               value={block.content.title || ""}
                               onChange={(e) => {
-                                const newBlocks = [...contentBlocks]
+                                const newBlocks = [...contentBlocks];
                                 newBlocks[index] = {
                                   ...block,
                                   content: {
                                     ...block.content,
                                     title: e.target.value,
                                   },
-                                }
-                                setContentBlocks(newBlocks)
-                                setHasUnsavedChanges(true)
+                                };
+                                setContentBlocks(newBlocks);
+                                setHasUnsavedChanges(true);
                               }}
                             />
                           </div>
@@ -328,16 +363,16 @@ export function ConceptContent({
                             <Input
                               value={block.content.url || ""}
                               onChange={(e) => {
-                                const newBlocks = [...contentBlocks]
+                                const newBlocks = [...contentBlocks];
                                 newBlocks[index] = {
                                   ...block,
                                   content: {
                                     ...block.content,
                                     url: e.target.value,
                                   },
-                                }
-                                setContentBlocks(newBlocks)
-                                setHasUnsavedChanges(true)
+                                };
+                                setContentBlocks(newBlocks);
+                                setHasUnsavedChanges(true);
                               }}
                             />
                           </div>
@@ -345,16 +380,16 @@ export function ConceptContent({
                             <ImageUpload
                               value={block.content.url || ""}
                               onChange={(url) => {
-                                const newBlocks = [...contentBlocks]
+                                const newBlocks = [...contentBlocks];
                                 newBlocks[index] = {
                                   ...block,
                                   content: {
                                     ...block.content,
                                     url: url || "",
                                   },
-                                }
-                                setContentBlocks(newBlocks)
-                                setHasUnsavedChanges(true)
+                                };
+                                setContentBlocks(newBlocks);
+                                setHasUnsavedChanges(true);
                               }}
                             />
                           )}
@@ -397,7 +432,7 @@ export function ConceptContent({
                   onResize={
                     editorMode
                       ? (width, height) => {
-                          const newBlocks = [...contentBlocks]
+                          const newBlocks = [...contentBlocks];
                           newBlocks[index] = {
                             ...block,
                             content: {
@@ -407,9 +442,9 @@ export function ConceptContent({
                                 height: height ? `${height}px` : "auto",
                               },
                             },
-                          }
-                          setContentBlocks(newBlocks)
-                          setHasUnsavedChanges(true)
+                          };
+                          setContentBlocks(newBlocks);
+                          setHasUnsavedChanges(true);
                         }
                       : undefined
                   }
@@ -424,13 +459,13 @@ export function ConceptContent({
                   editorMode={editorMode}
                   isTransparent={block.content.isTransparent}
                   onChange={(content) => {
-                    const newBlocks = [...contentBlocks]
+                    const newBlocks = [...contentBlocks];
                     newBlocks[index] = {
                       ...block,
                       content: { ...block.content, textContent: content },
-                    }
-                    setContentBlocks(newBlocks)
-                    setHasUnsavedChanges(true)
+                    };
+                    setContentBlocks(newBlocks);
+                    setHasUnsavedChanges(true);
                   }}
                 />
               )}
@@ -572,5 +607,5 @@ export function ConceptContent({
       {/* Add bottom padding to prevent content from being hidden behind buttons */}
       <div className="h-32" />
     </div>
-  )
+  );
 }

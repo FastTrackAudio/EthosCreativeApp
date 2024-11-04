@@ -31,22 +31,24 @@ export function AddConceptModal({ onClose, onAdd }: AddConceptModalProps) {
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="~w-[90vw]/[600px] ~max-w-[90vw]/[600px]">
         <DialogHeader>
-          <DialogTitle>Add New Concept</DialogTitle>
+          <DialogTitle className="~text-lg/2xl">Add New Concept</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <div className="space-y-4">
+          <div className="~space-y-3/6">
             <Input
               placeholder="Concept Title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              className="~text-sm/base"
               required
             />
             <Textarea
               placeholder="Concept Content"
               value={content}
               onChange={(e) => setContent(e.target.value)}
+              className="~min-h-[100px]/[200px] ~text-sm/base"
               required
             />
             <Input
@@ -54,13 +56,23 @@ export function AddConceptModal({ onClose, onAdd }: AddConceptModalProps) {
               placeholder="Image URL (optional)"
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
+              className="~text-sm/base"
             />
           </div>
-          <DialogFooter className="mt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit">Add Concept</Button>
+          <DialogFooter className="~mt-4/8">
+            <div className="flex flex-col sm:flex-row ~gap-2/4 w-full sm:w-auto">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                className="w-full sm:w-auto"
+              >
+                Cancel
+              </Button>
+              <Button type="submit" className="w-full sm:w-auto">
+                Add Concept
+              </Button>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>

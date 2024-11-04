@@ -1,21 +1,27 @@
-import { createUploadthing, type FileRouter } from "uploadthing/next"
-import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server"
+import { createUploadthing, type FileRouter } from "uploadthing/next";
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
+import { UploadThingError } from "uploadthing/server";
 
-const f = createUploadthing()
+const f = createUploadthing();
 
 export const ourFileRouter = {
   imageUploader: f({ image: { maxFileSize: "4MB" } })
     .middleware(async () => {
-      const { getUser } = getKindeServerSession()
-      const user = await getUser()
+      // Get Kinde user session
+      const { getUser } = getKindeServerSession();
+      const user = await getUser();
 
-      if (!user) throw new Error("Unauthorized")
+      if (!user || !user.id) throw new UploadThingError("Unauthorized");
 
-      return { userId: user.id }
+      // Return metadata to be passed to onUploadComplete
+      return { userId: user.id };
     })
     .onUploadComplete(async ({ metadata, file }) => {
-      return { uploadedBy: metadata.userId, url: file.url }
-    }),
-} satisfies FileRouter
+      console.log("Upload complete for userId:", metadata.userId);
+      console.log("file url", file.url);
 
-export type OurFileRouter = typeof ourFileRouter
+      return { uploadedBy: metadata.userId, url: file.url };
+    }),
+} satisfies FileRouter;
+
+export type OurFileRouter = typeof ourFileRouter;

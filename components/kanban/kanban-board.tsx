@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useState } from "react"
+import { useState } from "react";
 import {
   DragDropContext,
   Droppable,
@@ -9,8 +9,8 @@ import {
   DroppableProvided,
   DraggableProvided,
   DraggableStateSnapshot,
-} from "@hello-pangea/dnd"
-import { Button } from "@/components/ui/button"
+} from "@hello-pangea/dnd";
+import { Button } from "@/components/ui/button";
 import {
   Plus,
   PlusCircle,
@@ -19,10 +19,10 @@ import {
   Trash,
   Check,
   X,
-} from "lucide-react"
-import { KanbanCard } from "./kanban-card"
-import { ConceptCard, KanbanSection, CurriculumWeek } from "@/types/kanban"
-import { cn } from "@/lib/utils"
+} from "lucide-react";
+import { KanbanCard } from "./kanban-card";
+import { ConceptCard, KanbanSection, CurriculumWeek } from "@/types/kanban";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -30,15 +30,15 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogClose,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,29 +49,29 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
 
 interface KanbanBoardProps {
-  sections: KanbanSection[]
-  cards: ConceptCard[]
-  isLoading: boolean
-  sectionWidth?: string
-  showConceptEditButtons?: boolean
-  showCardDescription?: boolean
-  showCardImage?: boolean
-  editorMode?: boolean
-  courseId?: string
-  isCurriculumView?: boolean
-  curriculumWeeks?: CurriculumWeek[]
-  cardUrlPattern?: string
-  onCreateSection: (data: { title: string; order: number }) => void
-  onUpdateSection: (data: Partial<KanbanSection> & { id: string }) => void
-  onDeleteSection: (id: string) => void
-  onCreateCard: (data: Partial<ConceptCard> & { sectionId: string }) => void
-  onUpdateCard: (data: Partial<ConceptCard> & { id: string }) => void
-  onDeleteCard: (id: string) => void
-  onAddToCurriculum?: (conceptId: string) => void
-  onRemoveFromCurriculum?: (conceptId: string) => void
+  sections: KanbanSection[];
+  cards: ConceptCard[];
+  isLoading: boolean;
+  sectionWidth?: string;
+  showConceptEditButtons?: boolean;
+  showCardDescription?: boolean;
+  showCardImage?: boolean;
+  editorMode?: boolean;
+  courseId?: string;
+  isCurriculumView?: boolean;
+  curriculumWeeks?: CurriculumWeek[];
+  cardUrlPattern?: string;
+  onCreateSection: (data: { title: string; order: number }) => void;
+  onUpdateSection: (data: Partial<KanbanSection> & { id: string }) => void;
+  onDeleteSection: (id: string) => void;
+  onCreateCard: (data: Partial<ConceptCard> & { sectionId: string }) => void;
+  onUpdateCard: (data: Partial<ConceptCard> & { id: string }) => void;
+  onDeleteCard: (id: string) => void;
+  onAddToCurriculum?: (conceptId: string) => void;
+  onRemoveFromCurriculum?: (conceptId: string) => void;
 }
 
 export function KanbanBoard({
@@ -81,7 +81,7 @@ export function KanbanBoard({
   showCardImage = true,
   showConceptEditButtons = true,
   isCurriculumView = false,
-  sectionWidth = "min-w-[300px]",
+  sectionWidth = "w-[400px]",
   curriculumWeeks = [],
   editorMode = true,
   cardUrlPattern,
@@ -94,59 +94,68 @@ export function KanbanBoard({
   onAddToCurriculum,
   onRemoveFromCurriculum,
 }: KanbanBoardProps) {
-  const [newConceptTitle, setNewConceptTitle] = useState("")
-  const [newConceptDescription, setNewConceptDescription] = useState("")
-  const [editingSectionId, setEditingSectionId] = useState<string | null>(null)
-  const [editingSectionTitle, setEditingSectionTitle] = useState("")
+  const [newConceptTitle, setNewConceptTitle] = useState("");
+  const [newConceptDescription, setNewConceptDescription] = useState("");
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
+  const [editingSectionTitle, setEditingSectionTitle] = useState("");
 
   const isConceptInCurriculum = (conceptId: string): boolean => {
     return curriculumWeeks.some((week) =>
       week.concepts?.some((concept) => concept.id === conceptId)
-    )
-  }
+    );
+  };
 
   const handleDragEnd = (result: DropResult) => {
-    if (!result.destination) return
+    if (!result.destination) return;
 
-    const { source, destination, draggableId: conceptId } = result
+    const { source, destination, draggableId: conceptId } = result;
 
     if (isCurriculumView) {
-      onAddToCurriculum?.(conceptId)
+      onAddToCurriculum?.(conceptId);
     } else {
       onUpdateCard?.({
         id: conceptId,
         sectionId: destination.droppableId,
-      })
+      });
     }
-  }
+  };
 
   const handleEditSection = (section: KanbanSection) => {
-    setEditingSectionId(section.id)
-    setEditingSectionTitle(section.title)
-  }
+    setEditingSectionId(section.id);
+    setEditingSectionTitle(section.title);
+  };
 
   const handleSaveSection = () => {
     if (editingSectionId && editingSectionTitle.trim()) {
       onUpdateSection?.({
         id: editingSectionId,
         title: editingSectionTitle.trim(),
-      })
-      setEditingSectionId(null)
-      setEditingSectionTitle("")
+      });
+      setEditingSectionId(null);
+      setEditingSectionTitle("");
     }
-  }
+  };
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <div className="h-full">
+      <div className="h-full overflow-hidden">
         <div className="h-full overflow-x-auto">
-          <div className="flex gap-4 p-4 min-w-max">
+          <div
+            className={cn(
+              // Layout
+              "flex h-full",
+              // Spacing
+              "~gap-3/6 ~p-4/8",
+              // Ensure minimum content width
+              "min-w-max"
+            )}
+          >
             {sections.map((section) => (
               <div
                 key={section.id}
                 className={cn(
                   "bg-muted rounded-lg flex flex-col h-fit",
-                  sectionWidth
+                  "~min-w-[280px]/[300px] ~max-w-[350px]/[400px]"
                 )}
               >
                 <div className="p-4">
@@ -162,9 +171,9 @@ export function KanbanBoard({
                           autoFocus
                           onKeyDown={(e) => {
                             if (e.key === "Enter") {
-                              handleSaveSection()
+                              handleSaveSection();
                             } else if (e.key === "Escape") {
-                              setEditingSectionId(null)
+                              setEditingSectionId(null);
                             }
                           }}
                         />
@@ -340,13 +349,13 @@ export function KanbanBoard({
                         </DialogHeader>
                         <form
                           onSubmit={(e) => {
-                            e.preventDefault()
+                            e.preventDefault();
                             onCreateCard?.({
                               title: newConceptTitle,
                               sectionId: section.id,
-                            })
-                            setNewConceptTitle("")
-                            setNewConceptDescription("")
+                            });
+                            setNewConceptTitle("");
+                            setNewConceptDescription("");
                           }}
                           className="space-y-4"
                         >
@@ -393,5 +402,5 @@ export function KanbanBoard({
         </div>
       </div>
     </DragDropContext>
-  )
+  );
 }

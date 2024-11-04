@@ -1,18 +1,18 @@
-"use client"
+"use client";
 
-import React, { forwardRef } from "react"
-import dynamic from "next/dynamic"
+import React, { forwardRef } from "react";
+import dynamic from "next/dynamic";
 
 const ReactPlayer = dynamic(() => import("react-player/lazy"), {
   ssr: false,
-})
+});
 
 interface CustomVideoPlayerProps {
-  src: string
-  title?: string
-  autoPlay?: boolean
-  muted?: boolean
-  controls?: boolean
+  src: string;
+  title?: string;
+  autoPlay?: boolean;
+  muted?: boolean;
+  controls?: boolean;
 }
 
 export const CustomVideoPlayer = forwardRef<
@@ -20,7 +20,10 @@ export const CustomVideoPlayer = forwardRef<
   CustomVideoPlayerProps
 >(({ src, title, autoPlay = false, muted = false, controls = true }, ref) => {
   return (
-    <div ref={ref} className="relative aspect-video w-full">
+    <div
+      ref={ref}
+      className="relative aspect-video w-full ~max-w-[300px]/[1200px] mx-auto"
+    >
       <ReactPlayer
         url={src}
         width="100%"
@@ -31,7 +34,7 @@ export const CustomVideoPlayer = forwardRef<
         title={title}
       />
     </div>
-  )
-})
+  );
+});
 
-CustomVideoPlayer.displayName = "CustomVideoPlayer"
+CustomVideoPlayer.displayName = "CustomVideoPlayer";

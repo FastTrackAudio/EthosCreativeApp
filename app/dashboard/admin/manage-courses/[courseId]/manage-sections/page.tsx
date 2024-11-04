@@ -1,28 +1,28 @@
-"use client"
+"use client";
 
-import React, { useState } from "react"
-import { KanbanBoard } from "@/components/kanban/kanban-board"
-import Link from "next/link"
-import { ArrowLeft, Type, ImageOff } from "lucide-react"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import axios from "axios"
-import { ConceptCard, KanbanSection } from "@/types/kanban"
-import { Button } from "@/components/ui/button"
+import React, { useState } from "react";
+import { KanbanBoard } from "@/components/kanban/kanban-board";
+import Link from "next/link";
+import { ArrowLeft, Type, ImageOff } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
+import { ConceptCard, KanbanSection } from "@/types/kanban";
+import { Button } from "@/components/ui/button";
 
 type ConceptUpdateData = Partial<ConceptCard> & {
-  id: string
-  sectionId?: string
-  order?: number
-}
+  id: string;
+  sectionId?: string;
+  order?: number;
+};
 
 export default function ManageSectionsPage({
   params,
 }: {
-  params: { courseId: string }
+  params: { courseId: string };
 }) {
-  const queryClient = useQueryClient()
-  const [hideDescriptions, setHideDescriptions] = useState(false)
-  const [hideImages, setHideImages] = useState(false)
+  const queryClient = useQueryClient();
+  const [hideDescriptions, setHideDescriptions] = useState(false);
+  const [hideImages, setHideImages] = useState(false);
 
   // Fetch sections
   const { data: sections, isLoading: sectionsLoading } = useQuery({
@@ -30,10 +30,10 @@ export default function ManageSectionsPage({
     queryFn: async () => {
       const response = await axios.get(
         `/api/courses/${params.courseId}/sections`
-      )
-      return response.data
+      );
+      return response.data;
     },
-  })
+  });
 
   // Fetch concepts
   const { data: concepts, isLoading: conceptsLoading } = useQuery({
@@ -41,10 +41,10 @@ export default function ManageSectionsPage({
     queryFn: async () => {
       const response = await axios.get(
         `/api/courses/${params.courseId}/concepts`
-      )
-      return response.data
+      );
+      return response.data;
     },
-  })
+  });
 
   // Create section mutation
   const createSection = useMutation({
@@ -52,15 +52,15 @@ export default function ManageSectionsPage({
       const response = await axios.post(
         `/api/courses/${params.courseId}/sections`,
         data
-      )
-      return response.data
+      );
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["sections", params.courseId],
-      })
+      });
     },
-  })
+  });
 
   // Update section mutation
   const updateSection = useMutation({
@@ -68,32 +68,32 @@ export default function ManageSectionsPage({
       const response = await axios.patch(
         `/api/courses/${params.courseId}/sections/${data.id}`,
         data
-      )
-      return response.data
+      );
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["sections", params.courseId],
-      })
+      });
     },
-  })
+  });
 
   // Delete section mutation
   const deleteSection = useMutation({
     mutationFn: async (sectionId: string) => {
       await axios.delete(
         `/api/courses/${params.courseId}/sections/${sectionId}`
-      )
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["sections", params.courseId],
-      })
+      });
       queryClient.invalidateQueries({
         queryKey: ["concepts", params.courseId],
-      })
+      });
     },
-  })
+  });
 
   // Update concept mutation
   const updateConcept = useMutation({
@@ -101,75 +101,79 @@ export default function ManageSectionsPage({
       const response = await axios.patch(
         `/api/courses/${params.courseId}/concepts/${data.id}`,
         data
-      )
-      return response.data
+      );
+      return response.data;
     },
     onMutate: async (newData: ConceptUpdateData) => {
       await queryClient.cancelQueries({
         queryKey: ["concepts", params.courseId],
-      })
+      });
 
       const previousConcepts = queryClient.getQueryData<ConceptCard[]>([
         "concepts",
         params.courseId,
-      ])
+      ]);
 
       if (previousConcepts) {
-        let updatedConcepts = [...previousConcepts]
+        let updatedConcepts = [...previousConcepts];
 
         if (newData.sectionId && newData.order !== undefined) {
-          const movingConcept = updatedConcepts.find((c) => c.id === newData.id)
+          const movingConcept = updatedConcepts.find(
+            (c) => c.id === newData.id
+          );
           if (movingConcept) {
-            updatedConcepts = updatedConcepts.filter((c) => c.id !== newData.id)
-            const updatedConcept = { ...movingConcept, ...newData }
-            updatedConcepts.splice(newData.order, 0, updatedConcept)
+            updatedConcepts = updatedConcepts.filter(
+              (c) => c.id !== newData.id
+            );
+            const updatedConcept = { ...movingConcept, ...newData };
+            updatedConcepts.splice(newData.order, 0, updatedConcept);
             updatedConcepts = updatedConcepts.map((concept, index) => ({
               ...concept,
               order: index,
-            }))
+            }));
           }
         } else {
           updatedConcepts = updatedConcepts.map((concept) =>
             concept.id === newData.id ? { ...concept, ...newData } : concept
-          )
+          );
         }
 
         queryClient.setQueryData<ConceptCard[]>(
           ["concepts", params.courseId],
           updatedConcepts
-        )
+        );
       }
 
-      return { previousConcepts }
+      return { previousConcepts };
     },
     onError: (err, newData, context) => {
       if (context?.previousConcepts) {
         queryClient.setQueryData(
           ["concepts", params.courseId],
           context.previousConcepts
-        )
+        );
       }
     },
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: ["concepts", params.courseId],
-      })
+      });
     },
-  })
+  });
 
   // Delete concept mutation
   const deleteConcept = useMutation({
     mutationFn: async (conceptId: string) => {
       await axios.delete(
         `/api/courses/${params.courseId}/concepts/${conceptId}`
-      )
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["concepts", params.courseId],
-      })
+      });
     },
-  })
+  });
 
   // Create concept mutation
   const createConcept = useMutation({
@@ -177,11 +181,11 @@ export default function ManageSectionsPage({
       const currentConcepts = queryClient.getQueryData<ConceptCard[]>([
         "concepts",
         params.courseId,
-      ])
+      ]);
       const sectionConcepts = currentConcepts?.filter(
         (c) => c.sectionId === data.sectionId
-      )
-      const order = sectionConcepts?.length ?? 0
+      );
+      const order = sectionConcepts?.length ?? 0;
 
       const response = await axios.post(
         `/api/courses/${params.courseId}/concepts`,
@@ -189,15 +193,15 @@ export default function ManageSectionsPage({
           ...data,
           order,
         }
-      )
-      return response.data
+      );
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["concepts", params.courseId],
-      })
+      });
     },
-  })
+  });
 
   return (
     <div className="p-4">
@@ -261,12 +265,12 @@ export default function ManageSectionsPage({
                 onCreateCard={(data) => createConcept.mutate(data)}
                 onUpdateCard={(data) => updateConcept.mutate(data)}
                 onDeleteCard={(id) => deleteConcept.mutate(id)}
-                cardUrlPattern="/dashboard/admin/manage-courses/:courseId/sections/:sectionId/concepts/:conceptId"
+                cardUrlPattern={`/dashboard/admin/manage-courses/${params.courseId}/sections/:sectionId/concepts/:conceptId`}
               />
             </div>
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }

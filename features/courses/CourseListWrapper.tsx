@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import React from "react"
-import { type Course } from "@/types"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import React from "react";
+import { type Course } from "@/types";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
@@ -13,8 +13,8 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   MoreVertical,
   Users,
@@ -23,14 +23,14 @@ import {
   ArrowUpRight,
   UserPlus,
   Plus,
-} from "lucide-react"
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -38,8 +38,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { ManageCourseUsers } from "./ManageCourseUsers"
+} from "@/components/ui/dialog";
+import { ManageCourseUsers } from "./ManageCourseUsers";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,33 +50,40 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import axios from "axios"
-import { CreateCourseForm } from "./CreateCourseForm"
-import { formatDate } from "@/lib/utils"
+} from "@/components/ui/alert-dialog";
+import axios from "axios";
+import { CreateCourseForm } from "./CreateCourseForm";
+import { formatDate } from "@/lib/utils";
+import {
+  CourseCard,
+  CourseCardHeader,
+  CourseCardContent,
+  CourseCardTitle,
+  CourseCardDescription,
+} from "@/components/ui/course-card";
 
 interface ExtendedCourse {
-  id: string
-  title: string
-  description: string | null
-  userId: string
-  createdAt: Date
-  updatedAt: Date
-  published?: boolean
+  id: string;
+  title: string;
+  description: string | null;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
+  published?: boolean;
   _count?: {
-    enrollments: number
-    sections: number
-  }
+    enrollments: number;
+    sections: number;
+  };
   user?: {
-    firstName: string
-    lastName: string
-  }
+    firstName: string;
+    lastName: string;
+  };
 }
 
 interface CourseListWrapperProps {
-  userId?: string
-  isAdmin?: boolean
-  initialCourses?: ExtendedCourse[]
+  userId?: string;
+  isAdmin?: boolean;
+  initialCourses?: ExtendedCourse[];
 }
 
 export function CourseListWrapper({
@@ -84,43 +91,43 @@ export function CourseListWrapper({
   isAdmin,
   initialCourses = [],
 }: CourseListWrapperProps) {
-  const queryClient = useQueryClient()
-  const pathname = usePathname()
-  const [isOpen, setIsOpen] = React.useState(false)
+  const queryClient = useQueryClient();
+  const pathname = usePathname();
+  const [isOpen, setIsOpen] = React.useState(false);
+  const isAdminView = pathname.includes("/admin/manage-courses");
 
   const { data: courses = initialCourses, isLoading } = useQuery<
     ExtendedCourse[]
   >({
-    queryKey: ["courses", userId],
+    queryKey: ["courses", isAdminView ? "admin" : userId],
     queryFn: async () => {
-      const response = await fetch(
-        `/api/courses${userId ? `?userId=${userId}` : ""}`
-      )
-      if (!response.ok) throw new Error("Failed to fetch courses")
-      return response.json()
+      const endpoint = isAdminView ? "/api/courses/admin" : "/api/courses";
+      const queryString = !isAdminView && userId ? `?userId=${userId}` : "";
+
+      const response = await fetch(`${endpoint}${queryString}`);
+      if (!response.ok) throw new Error("Failed to fetch courses");
+      return response.json();
     },
     initialData: initialCourses,
-  })
+  });
 
   const deleteCourse = useMutation({
     mutationFn: async (courseId: string) => {
-      await axios.delete(`/api/courses/${courseId}`)
+      await axios.delete(`/api/courses/${courseId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["courses"] })
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
     },
-  })
+  });
 
   if (isLoading) {
-    return <div>Loading...</div>
+    return <div>Loading...</div>;
   }
 
   return (
-    <>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-[color:var(--color-text)]">
-          Courses
-        </h2>
+    <div className="~space-y-4/6">
+      <div className="flex justify-between items-center">
+        <h2 className="~text-xl/3xl font-bold">Courses</h2>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -137,150 +144,147 @@ export function CourseListWrapper({
         </Dialog>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {courses.map((course: ExtendedCourse) => (
-          <Card
-            key={course.id}
-            className="flex flex-col bg-[color:var(--color-surface-elevated)] border-[color:var(--color-border)] hover:border-[color:var(--color-border-contrasted)] transition-all duration-[var(--transition)] shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow)]"
-          >
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <div className="space-y-1">
-                  <CardTitle className="text-[color:var(--color-text)]">
-                    {course.title}
-                  </CardTitle>
-                  <CardDescription className="text-[color:var(--color-text-light)] line-clamp-2">
-                    {course.description}
-                  </CardDescription>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-[color:var(--color-text-lighter)] hover:text-[color:var(--color-text)]"
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
-                      <Link
-                        href={`/dashboard/admin/manage-courses/${course.id}/edit`}
-                        className="flex items-center w-full"
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ~gap-4/6 w-full">
+        {courses.map((course) => (
+          <div className="w-full" key={course.id}>
+            <CourseCard>
+              <CourseCardHeader>
+                <div className="flex justify-between items-start ~gap-2/3">
+                  <div className="~space-y-1/2">
+                    <CourseCardTitle>{course.title}</CourseCardTitle>
+                    <CourseCardDescription>
+                      {course.description}
+                    </CourseCardDescription>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 flex-shrink-0"
                       >
-                        Edit Course
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Link
-                        href={`/dashboard/admin/manage-courses/${course.id}/sections`}
-                        className="flex items-center w-full"
-                      >
-                        Manage Sections
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onSelect={(e) => e.preventDefault()}
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-[200px]">
+                      <DropdownMenuItem>
+                        <Link
+                          href={`/dashboard/admin/manage-courses/${course.id}/edit`}
+                          className="flex items-center w-full"
                         >
-                          Delete Course
-                        </DropdownMenuItem>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            Are you absolutely sure?
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone. This will permanently
-                            delete the course and all associated data including
-                            sections, concepts, and enrollments.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => deleteCourse.mutate(course.id)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          Edit Course
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>
+                        <Link
+                          href={`/dashboard/admin/manage-courses/${course.id}/sections`}
+                          className="flex items-center w-full"
+                        >
+                          Manage Sections
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onSelect={(e) => e.preventDefault()}
                           >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-1">
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-[color:var(--color-text-lightest)]" />
-                  <span className="text-sm text-[color:var(--color-text-light)]">
-                    {course._count?.enrollments || 0} Students
-                  </span>
+                            Delete Course
+                          </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Are you absolutely sure?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will
+                              permanently delete the course and all associated
+                              data including sections, concepts, and
+                              enrollments.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteCourse.mutate(course.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
-                <div className="flex items-center gap-2">
-                  <BookOpen className="h-4 w-4 text-[color:var(--color-text-lightest)]" />
-                  <span className="text-sm text-[color:var(--color-text-light)]">
-                    {course._count?.sections || 0} Sections
-                  </span>
+              </CourseCardHeader>
+
+              <CourseCardContent>
+                <div className="grid grid-cols-2 ~gap-2/4">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-[color:var(--color-text-lightest)]" />
+                    <span className="text-sm text-[color:var(--color-text-light)]">
+                      {course._count?.enrollments || 0} Students
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="h-4 w-4 text-[color:var(--color-text-lightest)]" />
+                    <span className="text-sm text-[color:var(--color-text-light)]">
+                      {course._count?.sections || 0} Sections
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-[color:var(--color-text-lightest)]" />
+                    <span className="text-sm text-[color:var(--color-text-light)]">
+                      {formatDate(course.createdAt)}
+                    </span>
+                  </div>
+                  <div>
+                    <Badge
+                      variant={course.published ? "default" : "secondary"}
+                      className="bg-[color:var(--color-surface)] text-[color:var(--color-text-light)]"
+                    >
+                      {course.published ? "Published" : "Draft"}
+                    </Badge>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-[color:var(--color-text-lightest)]" />
-                  <span className="text-sm text-[color:var(--color-text-light)]">
-                    {formatDate(course.createdAt)}
-                  </span>
-                </div>
-                <div>
-                  <Badge
-                    variant={course.published ? "default" : "secondary"}
-                    className="bg-[color:var(--color-surface)] text-[color:var(--color-text-light)]"
+              </CourseCardContent>
+              <CardFooter className="card-button-group border-t border-[var(--card-border-color)] ~py-2/4 px-3/6">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="card-button-responsive"
+                    >
+                      <UserPlus className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-screen w-full max-h-[95vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Manage Course Users</DialogTitle>
+                      <DialogDescription>
+                        Add or remove users from this course
+                      </DialogDescription>
+                    </DialogHeader>
+                    <ManageCourseUsers courseId={course.id} />
+                  </DialogContent>
+                </Dialog>
+                <Button asChild className="card-button-responsive">
+                  <Link
+                    href={`/dashboard/admin/manage-courses/${course.id}/manage-sections`}
+                    className="flex items-center justify-center gap-2"
                   >
-                    {course.published ? "Published" : "Draft"}
-                  </Badge>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-col sm:flex-row gap-2 border-t border-[color:var(--color-border)] pt-4">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full sm:w-auto border-[color:var(--color-border)] hover:bg-[color:var(--color-surface-hover)]"
-                  >
-                    <UserPlus className="h-4 w-4" />
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-screen w-full max-h-[95vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Manage Course Users</DialogTitle>
-                    <DialogDescription>
-                      Add or remove users from this course
-                    </DialogDescription>
-                  </DialogHeader>
-                  <ManageCourseUsers courseId={course.id} />
-                </DialogContent>
-              </Dialog>
-              <Button
-                asChild
-                className="w-full sm:flex-1 lg:w-auto hover:shadow-[var(--shadow)]"
-              >
-                <Link
-                  href={`/dashboard/admin/manage-courses/${course.id}/manage-sections`}
-                >
-                  Edit Course
-                  <ArrowUpRight className="h-4 w-4 ml-2" />
-                </Link>
-              </Button>
-            </CardFooter>
-          </Card>
+                    Edit Course
+                    <ArrowUpRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </CardFooter>
+            </CourseCard>
+          </div>
         ))}
       </div>
-    </>
-  )
+    </div>
+  );
 }

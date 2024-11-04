@@ -67,8 +67,18 @@ export function Section({
   };
 
   return (
-    <Card className={cn("flex flex-col", className)}>
-      <CardHeader className="p-3 space-y-0">
+    <Card
+      className={cn(
+        // Base styles
+        "flex flex-col h-fit",
+        // Fluid width constraints
+        "~min-w-[300px]/[350px] ~max-w-[350px]/[450px]",
+        // Spacing
+        "~p-2/4",
+        className
+      )}
+    >
+      <CardHeader className="~space-y-2/4">
         <div className="flex items-center justify-between">
           {isEditing ? (
             <div className="flex items-center gap-2 flex-1">
@@ -134,14 +144,19 @@ export function Section({
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
-            className="flex-1 p-3 pt-0 space-y-3"
+            className={cn(
+              // Layout
+              "flex flex-col",
+              // Spacing
+              "~gap-2/4 ~p-2/4"
+            )}
           >
             {cards.map((card, index) => (
               <ConceptCard
                 key={card.id}
                 card={card}
                 index={index}
-                maxWidth={conceptMaxWidth}
+                maxWidth="w-full"
                 showEditButtons={showConceptEditButtons}
                 hideImages={showCardImage}
                 hideDescriptions={showCardDescription}
