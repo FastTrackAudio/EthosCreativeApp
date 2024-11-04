@@ -16,6 +16,7 @@ import {
   Trash2,
   Edit,
   EyeOff,
+  Code2,
 } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
@@ -38,6 +39,7 @@ import { ImageUpload } from "@/components/ui/image-upload";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { Textarea } from "@/components/ui/textarea";
 
 interface ConceptContentProps {
   conceptId: string;
@@ -65,6 +67,10 @@ export function ConceptContent({
   const [audioTitle, setAudioTitle] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [imageTitle, setImageTitle] = useState("");
+
+  const [showEmbedDialog, setShowEmbedDialog] = useState(false);
+  const [embedCode, setEmbedCode] = useState("");
+  const [embedPreview, setEmbedPreview] = useState("");
 
   const router = useRouter();
 
@@ -201,10 +207,10 @@ export function ConceptContent({
   };
 
   const handleMoveBlock = (index: number, direction: "up" | "down") => {
-    const newBlocks = [...contentBlocks];
     const newIndex = direction === "up" ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= newBlocks.length) return;
+    if (newIndex < 0 || newIndex >= contentBlocks.length) return;
 
+    const newBlocks = [...contentBlocks];
     const [movedBlock] = newBlocks.splice(index, 1);
     newBlocks.splice(newIndex, 0, movedBlock);
     setContentBlocks(newBlocks);
@@ -264,6 +270,90 @@ export function ConceptContent({
       console.error("Error saving concept:", error);
     },
   });
+
+  const handleAddEmbed = () => {
+    if (embedCode) {
+      // Wrap the embed code in a centering container
+      const centeredHtml = `
+        <div style="display: flex; justify-content: center; align-items: center; width: 100%;">
+          ${embedCode}
+        </div>
+      `;
+
+      const newBlock = {
+        id: `embed-${Date.now()}`,
+        type: "embed",
+        order: contentBlocks.length,
+        content: {
+          html: centeredHtml,
+          height: "500px", // Default height
+        },
+      };
+      setContentBlocks([...contentBlocks, newBlock]);
+      setHasUnsavedChanges(true);
+      setEmbedCode("");
+      setEmbedPreview("");
+      setShowEmbedDialog(false);
+    }
+  };
+
+  // Generic script injection handler
+  useEffect(() => {
+    const injectedScripts: HTMLScriptElement[] = []; // Keep track of scripts we inject
+    const embedBlocks = contentBlocks.filter((block) => block.type === "embed");
+
+    if (embedBlocks.length > 0) {
+      embedBlocks.forEach((block) => {
+        const scriptMatches = block.content.html.match(
+          /<script[^>]*>([\s\S]*?)<\/script>/gi
+        );
+
+        if (scriptMatches) {
+          scriptMatches.forEach((scriptTag: string) => {
+            const script = document.createElement("script");
+            const srcMatch = scriptTag.match(/src=["'](.*?)["']/);
+
+            if (srcMatch) {
+              script.src = srcMatch[1];
+            }
+
+            const content = scriptTag.replace(/<script[^>]*>|<\/script>/gi, "");
+            if (content.trim()) {
+              script.textContent = content;
+            }
+
+            script.async = true;
+            document.body.appendChild(script);
+            injectedScripts.push(script); // Track the script
+          });
+        }
+      });
+
+      // Cleanup function
+      return () => {
+        // Only remove scripts we injected
+        injectedScripts.forEach((script) => {
+          if (script.parentNode) {
+            script.parentNode.removeChild(script);
+          }
+        });
+      };
+    }
+  }, [contentBlocks]);
+
+  // Add edit functionality for embeds
+  const handleEditEmbed = (index: number, html: string) => {
+    const newBlocks = [...contentBlocks];
+    newBlocks[index] = {
+      ...newBlocks[index],
+      content: {
+        ...newBlocks[index].content,
+        html,
+      },
+    };
+    setContentBlocks(newBlocks);
+    setHasUnsavedChanges(true);
+  };
 
   return (
     <div className="container mx-auto p-4 max-w-6xl">
@@ -335,76 +425,105 @@ export function ConceptContent({
                           <Edit className="h-4 w-4" />
                         </Button>
                       </DialogTrigger>
-                      <DialogContent>
+                      <DialogContent className="max-w-4xl">
                         <DialogHeader>
                           <DialogTitle>Edit {block.type}</DialogTitle>
                         </DialogHeader>
                         <div className="space-y-4 py-4">
-                          <div className="space-y-2">
-                            <Label>Title</Label>
-                            <Input
-                              value={block.content.title || ""}
-                              onChange={(e) => {
-                                const newBlocks = [...contentBlocks];
-                                newBlocks[index] = {
-                                  ...block,
-                                  content: {
-                                    ...block.content,
-                                    title: e.target.value,
-                                  },
-                                };
-                                setContentBlocks(newBlocks);
-                                setHasUnsavedChanges(true);
-                              }}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>URL</Label>
-                            <Input
-                              value={block.content.url || ""}
-                              onChange={(e) => {
-                                const newBlocks = [...contentBlocks];
-                                newBlocks[index] = {
-                                  ...block,
-                                  content: {
-                                    ...block.content,
-                                    url: e.target.value,
-                                  },
-                                };
-                                setContentBlocks(newBlocks);
-                                setHasUnsavedChanges(true);
-                              }}
-                            />
-                          </div>
-                          {block.type === "image" && (
-                            <ImageUpload
-                              value={block.content.url || ""}
-                              onChange={(url) => {
-                                const newBlocks = [...contentBlocks];
-                                newBlocks[index] = {
-                                  ...block,
-                                  content: {
-                                    ...block.content,
-                                    url: url || "",
-                                  },
-                                };
-                                setContentBlocks(newBlocks);
-                                setHasUnsavedChanges(true);
-                              }}
-                            />
+                          {block.type === "embed" ? (
+                            <div className="space-y-4">
+                              <div className="space-y-2">
+                                <Label>HTML Code</Label>
+                                <Textarea
+                                  value={block.content.html}
+                                  onChange={(e) =>
+                                    handleEditEmbed(index, e.target.value)
+                                  }
+                                  placeholder="Enter HTML embed code..."
+                                  className="font-mono min-h-[200px]"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Preview</Label>
+                                <div className="border rounded-lg p-4 bg-background">
+                                  <div
+                                    dangerouslySetInnerHTML={{
+                                      __html: block.content.html,
+                                    }}
+                                    className="w-full"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="space-y-2">
+                                <Label>Title</Label>
+                                <Input
+                                  value={block.content.title || ""}
+                                  onChange={(e) => {
+                                    const newBlocks = [...contentBlocks];
+                                    newBlocks[index] = {
+                                      ...block,
+                                      content: {
+                                        ...block.content,
+                                        title: e.target.value,
+                                      },
+                                    };
+                                    setContentBlocks(newBlocks);
+                                    setHasUnsavedChanges(true);
+                                  }}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>URL</Label>
+                                <Input
+                                  value={block.content.url || ""}
+                                  onChange={(e) => {
+                                    const newBlocks = [...contentBlocks];
+                                    newBlocks[index] = {
+                                      ...block,
+                                      content: {
+                                        ...block.content,
+                                        url: e.target.value,
+                                      },
+                                    };
+                                    setContentBlocks(newBlocks);
+                                    setHasUnsavedChanges(true);
+                                  }}
+                                />
+                              </div>
+                              {block.type === "image" && (
+                                <ImageUpload
+                                  value={block.content.url || ""}
+                                  onChange={(url) => {
+                                    const newBlocks = [...contentBlocks];
+                                    newBlocks[index] = {
+                                      ...block,
+                                      content: {
+                                        ...block.content,
+                                        url: url || "",
+                                      },
+                                    };
+                                    setContentBlocks(newBlocks);
+                                    setHasUnsavedChanges(true);
+                                  }}
+                                />
+                              )}
+                            </>
                           )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => handleDeleteBlock(index)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </DialogContent>
                     </Dialog>
                   )}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-destructive hover:text-destructive"
-                    onClick={() => handleDeleteBlock(index)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
                 </div>
               )}
 
@@ -468,6 +587,16 @@ export function ConceptContent({
                     setHasUnsavedChanges(true);
                   }}
                 />
+              )}
+              {block.type === "embed" && (
+                <div className="w-full flex justify-center items-center">
+                  <div className="w-full max-w-[800px] mx-auto flex justify-center">
+                    <div
+                      className="~min-h-[200px]/[600px] w-full flex justify-center items-center"
+                      dangerouslySetInnerHTML={{ __html: block.content.html }}
+                    />
+                  </div>
+                </div>
               )}
             </div>
           ))}
@@ -601,6 +730,73 @@ export function ConceptContent({
             <Type className="h-5 w-5" />
             Insert Text
           </Button>
+
+          <Dialog open={showEmbedDialog} onOpenChange={setShowEmbedDialog}>
+            <DialogTrigger asChild>
+              <Button
+                variant="outline"
+                size="lg"
+                className="flex items-center gap-2"
+              >
+                <Code2 className="h-5 w-5" />
+                Insert Embed
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl">
+              <DialogHeader>
+                <DialogTitle>Insert HTML Embed</DialogTitle>
+                <DialogDescription>
+                  Add any HTML embed code including iframes, widgets, or other
+                  embeddable content. Scripts will be automatically handled.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label>HTML Code</Label>
+                  <Textarea
+                    value={embedCode}
+                    onChange={(e) => {
+                      setEmbedCode(e.target.value);
+                      setEmbedPreview(e.target.value);
+                    }}
+                    placeholder="Paste your HTML embed code here..."
+                    className="font-mono min-h-[100px]"
+                  />
+                </div>
+                {embedPreview && (
+                  <div className="space-y-2">
+                    <Label>Preview</Label>
+                    <div className="border rounded-lg p-4 bg-background">
+                      <div
+                        dangerouslySetInnerHTML={{ __html: embedPreview }}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                )}
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setEmbedCode("");
+                      setEmbedPreview("");
+                      setShowEmbedDialog(false);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleAddEmbed}
+                    disabled={!embedCode.trim()}
+                  >
+                    Add Embed
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       )}
 

@@ -140,22 +140,14 @@ export function KanbanBoard({
     <DragDropContext onDragEnd={handleDragEnd}>
       <div className="h-full overflow-hidden">
         <div className="h-full overflow-x-auto">
-          <div
-            className={cn(
-              // Layout
-              "flex h-full",
-              // Spacing
-              "~gap-3/6 ~p-4/8",
-              // Ensure minimum content width
-              "min-w-max"
-            )}
-          >
+          <div className={cn("flex h-full", "~gap-3/6 ~p-4/8", "min-w-max")}>
             {sections.map((section) => (
               <div
                 key={section.id}
                 className={cn(
-                  "bg-muted rounded-lg flex flex-col h-fit",
-                  "~min-w-[280px]/[300px] ~max-w-[350px]/[400px]"
+                  "bg-muted rounded-lg flex flex-col",
+                  "w-[350px] min-w-[350px] max-w-[350px]",
+                  "max-h-[80vh] overflow-y-auto"
                 )}
               >
                 <div className="p-4">
