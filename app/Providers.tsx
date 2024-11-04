@@ -1,23 +1,13 @@
 "use client"
 
-import { ThemeProvider } from "next-themes"
-import { usePathname } from "next/navigation"
-import { useEffect } from "react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { ThemeProvider } from "next-themes"
+import { ToastContainer } from "react-toastify"
+import "react-toastify/dist/ReactToastify.css"
 
-// Create a client
 const queryClient = new QueryClient()
 
-export function Providers({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname()
-
-  useEffect(() => {
-    // Force a style refresh when pathname changes
-    document.body.style.display = "none"
-    document.body.offsetHeight // Force a reflow
-    document.body.style.display = ""
-  }, [pathname])
-
+export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider
@@ -27,6 +17,18 @@ export function Providers({ children }: { children: React.ReactNode }) {
         disableTransitionOnChange
       >
         {children}
+        <ToastContainer
+          position="bottom-right"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="dark"
+        />
       </ThemeProvider>
     </QueryClientProvider>
   )
