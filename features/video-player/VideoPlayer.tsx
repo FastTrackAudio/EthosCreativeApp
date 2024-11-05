@@ -8,7 +8,8 @@ const ReactPlayer = dynamic(() => import("react-player/lazy"), {
 });
 
 interface CustomVideoPlayerProps {
-  src: string;
+  url: string;
+  thumbnailUrl: string;
   title?: string;
   autoPlay?: boolean;
   muted?: boolean;
@@ -18,14 +19,14 @@ interface CustomVideoPlayerProps {
 export const CustomVideoPlayer = forwardRef<
   HTMLDivElement,
   CustomVideoPlayerProps
->(({ src, title, autoPlay = false, muted = false, controls = true }, ref) => {
+>(({ url, thumbnailUrl, title, autoPlay = false, muted = false, controls = true }, ref) => {
   return (
     <div
       ref={ref}
       className="relative aspect-video w-full ~max-w-[300px]/[1200px] mx-auto"
     >
       <ReactPlayer
-        url={src}
+        url={url}
         width="100%"
         height="100%"
         playing={autoPlay}
