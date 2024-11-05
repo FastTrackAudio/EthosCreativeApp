@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(
   request: Request,
@@ -12,12 +12,18 @@ export async function GET(
           courseId: params.courseId,
         },
       },
+      include: {
+        section: true,
+        quiz: true,
+        curriculum: true,
+        completions: true,
+      },
       orderBy: { order: "asc" },
-    })
-    return NextResponse.json(concepts)
+    });
+    return NextResponse.json(concepts);
   } catch (error) {
-    console.error("Error fetching concepts:", error)
-    return new NextResponse("Error fetching concepts", { status: 500 })
+    console.error("Error fetching concepts:", error);
+    return new NextResponse("Error fetching concepts", { status: 500 });
   }
 }
 
@@ -26,7 +32,7 @@ export async function POST(
   { params }: { params: { courseId: string } }
 ) {
   try {
-    const data = await request.json()
+    const data = await request.json();
 
     // Verify the section belongs to the course
     const section = await prisma.section.findUnique({
@@ -34,10 +40,10 @@ export async function POST(
         id: data.sectionId,
         courseId: params.courseId,
       },
-    })
+    });
 
     if (!section) {
-      return new NextResponse("Invalid section ID", { status: 400 })
+      return new NextResponse("Invalid section ID", { status: 400 });
     }
 
     // Get the highest order in the section
@@ -45,23 +51,30 @@ export async function POST(
       where: { sectionId: data.sectionId },
       orderBy: { order: "desc" },
       select: { order: true },
-    })
+    });
 
-    // Create the concept
+    // Create the concept with all fields
     const concept = await prisma.concept.create({
       data: {
         title: data.title,
+        shortTitle: data.shortTitle || null,
         description: data.description || null,
+        shortDescription: data.shortDescription || null,
         imageUrl: data.imageUrl || null,
+        videoUrl: data.videoUrl || null,
         sectionId: data.sectionId,
         order: (highestOrder?.order ?? -1) + 1,
-        content: "{}",
+        content: data.content || "{}",
+        blocks: data.blocks || [],
+        attachments: data.attachments || [],
+        metadata: data.metadata || {},
+        resources: data.resources || [],
       },
-    })
+    });
 
-    return NextResponse.json(concept)
+    return NextResponse.json(concept);
   } catch (error) {
-    console.error("Error creating concept:", error)
-    return new NextResponse("Error creating concept", { status: 500 })
+    console.error("Error creating concept:", error);
+    return new NextResponse("Error creating concept", { status: 500 });
   }
 }

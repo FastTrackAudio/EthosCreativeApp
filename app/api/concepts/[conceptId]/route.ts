@@ -10,9 +10,13 @@ export async function GET(
       where: {
         id: params.conceptId,
       },
-    })
-
-    console.log("Retrieved concept from DB:", concept)
+      include: {
+        section: true,
+        quiz: true,
+        curriculum: true,
+        completions: true,
+      },
+    });
 
     if (!concept) {
       return NextResponse.json({ error: "Concept not found" }, { status: 404 })
@@ -27,8 +31,6 @@ export async function GET(
             version: "1",
             blocks: [],
           }
-
-      console.log("Formatted content:", formattedContent)
     } catch (e) {
       console.error("Error parsing content from DB:", e)
       formattedContent = {
@@ -42,7 +44,6 @@ export async function GET(
       content: JSON.stringify(formattedContent),
     }
 
-    console.log("Sending response:", response)
     return NextResponse.json(response)
   } catch (error) {
     console.error("Error fetching concept:", error)
@@ -58,25 +59,38 @@ export async function PATCH(
   { params }: { params: { conceptId: string } }
 ) {
   try {
-    const body = await request.json()
-    console.log("Received PATCH request body:", body)
+    const body = await request.json();
+
+    const updateData = {
+      ...(body.title && { title: body.title }),
+      ...(body.shortTitle !== undefined && { shortTitle: body.shortTitle }),
+      ...(body.description !== undefined && { description: body.description }),
+      ...(body.shortDescription !== undefined && { shortDescription: body.shortDescription }),
+      ...(body.imageUrl !== undefined && { imageUrl: body.imageUrl }),
+      ...(body.order !== undefined && { order: body.order }),
+      ...(body.content && { 
+        content: typeof body.content === 'string' 
+          ? body.content 
+          : JSON.stringify(body.content)
+      }),
+    };
 
     const updatedConcept = await prisma.concept.update({
       where: {
         id: params.conceptId,
       },
-      data: {
-        content: body.content,
+      data: updateData,
+      include: {
+        section: true,
       },
-    })
+    });
 
-    console.log("Updated concept in DB:", updatedConcept)
-    return NextResponse.json(updatedConcept)
+    return NextResponse.json(updatedConcept);
   } catch (error) {
-    console.error("Error updating concept:", error)
+    console.error("Error updating concept:", error);
     return NextResponse.json(
-      { error: "Error updating concept" },
+      { error: "Error updating concept", details: error },
       { status: 500 }
-    )
+    );
   }
 }

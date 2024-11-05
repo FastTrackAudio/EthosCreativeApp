@@ -9,38 +9,38 @@ datasource db {
 }
 
 model User {
-  id            String           @id @unique
-  email         String           @unique
+  id            String   @id @unique
+  email         String   @unique
   firstName     String
   lastName      String
-  createdAt     DateTime         @default(now())
+  createdAt     DateTime @default(now())
   profileImage  String?
-  customUrl     String?          @unique  // For admin/dashboard URL
-  artistPageUrl String?          @unique  // For public artist profile URL
-  dateJoined    DateTime         @default(now())
-  enrolled      Boolean          @default(false)
-  permissions   String           @default("User")
-  updatedAt     DateTime         @default(now()) @updatedAt
+  customUrl     String?  @unique // For admin/dashboard URL
+  artistPageUrl String?  @unique // For public artist profile URL
+  dateJoined    DateTime @default(now())
+  enrolled      Boolean  @default(false)
+  permissions   String   @default("User")
+  updatedAt     DateTime @default(now()) @updatedAt
 
   // Artist Profile Fields
-  artistType      ArtistType?        // Using enum
-  workType        CreativeWorkType?  // Using enum
-  bio             String?        @db.Text
-  socialLinks     Json?          @default("{}")
-  skills          String[]       @default([])
-  achievements    Json?          @default("[]")
-  featuredWorks   Json?          @default("[]")
+  artistType    ArtistType? // Using enum
+  workType      CreativeWorkType? // Using enum
+  bio           String?           @db.Text
+  socialLinks   Json?             @default("{}")
+  skills        String[]          @default([])
+  achievements  Json?             @default("[]")
+  featuredWorks Json?             @default("[]")
 
   // Relations
-  courses       Course[]
-  enrollments   Enrollment[]
-  projects      Project[]
-  quizzes       Quiz[]
-  curriculum    UserCurriculum[]
-  conceptCompletions  ConceptCompletion[]
-  sectionCompletions  SectionCompletion[]
-  projectCompletions  ProjectCompletion[]
-  quizCompletions     QuizCompletion[]
+  courses            Course[]
+  enrollments        Enrollment[]
+  projects           Project[]
+  quizzes            Quiz[]
+  curriculum         UserCurriculum[]
+  conceptCompletions ConceptCompletion[]
+  sectionCompletions SectionCompletion[]
+  projectCompletions ProjectCompletion[]
+  quizCompletions    QuizCompletion[]
 }
 
 enum ArtistType {
@@ -80,63 +80,66 @@ model Course {
 }
 
 model Section {
-  id          String    @id @default(cuid())
+  id          String              @id @default(cuid())
   title       String
+  shortTitle  String?
   description String?
   courseId    String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  order       Int       @default(0)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  order       Int                 @default(0)
   concepts    Concept[]
-  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  completions         SectionCompletion[]
+  course      Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  completions SectionCompletion[]
 }
 
 model Concept {
-  id          String           @id @default(cuid())
-  title       String
-  content     Json             @default("[]")
-  videoUrl    String?
-  description String?
-  imageUrl    String?
-  sectionId   String
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  quizId      String?
-  order       Int              @default(0)
-  attachments Json?            @default("[]")
-  audioUrl    String?
-  blocks      Json?            @default("[]")
-  metadata    Json?            @default("{\"version\": 1, \"editorConfig\": {\"customStyles\": [], \"defaultStyles\": {}}}")
-  resources   Json?            @default("[]")
-  quiz        Quiz?            @relation(fields: [quizId], references: [id])
-  section     Section          @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  curriculum  UserCurriculum[]
-  completions         ConceptCompletion[]
+  id               String              @id @default(cuid())
+  title            String
+  shortTitle       String?
+  content          Json                @default("[]")
+  videoUrl         String?
+  description      String?
+  shortDescription String?
+  imageUrl         String?
+  sectionId        String
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  quizId           String?
+  order            Int                 @default(0)
+  attachments      Json?               @default("[]")
+  audioUrl         String?
+  blocks           Json?               @default("[]")
+  metadata         Json?               @default("{\"version\": 1, \"editorConfig\": {\"customStyles\": [], \"defaultStyles\": {}}}")
+  resources        Json?               @default("[]")
+  quiz             Quiz?               @relation(fields: [quizId], references: [id])
+  section          Section             @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  curriculum       UserCurriculum[]
+  completions      ConceptCompletion[]
 }
 
 model Project {
-  id          String   @id @default(cuid())
+  id          String              @id @default(cuid())
   title       String
   description String?
   userId      String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  completions         ProjectCompletion[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  completions ProjectCompletion[]
 }
 
 model Quiz {
-  id          String     @id @default(cuid())
+  id          String           @id @default(cuid())
   title       String
   description String?
   userId      String
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
   concepts    Concept[]
   questions   Question[]
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  completions         QuizCompletion[]
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  completions QuizCompletion[]
 }
 
 model Question {

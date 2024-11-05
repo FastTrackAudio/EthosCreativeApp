@@ -1,20 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Plus, MoreVertical, X, ExternalLink } from "lucide-react";
+import { MoreVertical, X } from "lucide-react";
 import Image from "next/image";
 import { ConceptCard } from "@/types/kanban";
 import { useRouter } from "next/navigation";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogClose,
-} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,9 +17,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { ImageUpload } from "@/components/ui/image-upload";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Card } from "@/components/ui/card";
+import { CardDialog } from "./card-dialog";
 
 interface KanbanCardProps {
   card: ConceptCard;
@@ -72,14 +61,8 @@ export function KanbanCard({
   onRemoveFromCurriculum,
   onUpdateCard,
   onDeleteCard,
-  onUpdateImage,
 }: KanbanCardProps) {
   const router = useRouter();
-  const [editTitle, setEditTitle] = useState(card.title);
-  const [editDescription, setEditDescription] = useState(
-    card.description || ""
-  );
-  const [editImage, setEditImage] = useState(card.imageUrl || "");
 
   const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
@@ -103,23 +86,8 @@ export function KanbanCard({
     e.stopPropagation();
 
     if (cardUrl) {
-      console.log("Navigating to:", cardUrl);
       router.push(cardUrl);
     }
-  };
-
-  const handleEdit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onUpdateCard?.({
-      id: card.id,
-      title: editTitle,
-      description: editDescription,
-      imageUrl: editImage,
-    });
-  };
-
-  const handleImageChange = (url?: string) => {
-    setEditImage(url || "");
   };
 
   return (
@@ -142,43 +110,9 @@ export function KanbanCard({
         <div className="space-y-3">
           <div className="flex items-start justify-between ~gap-2/4">
             <h3 className="text-sm font-medium line-clamp-2 flex-1">
-              {card.title}
+              {card.shortTitle || card.title}
             </h3>
             <div className="flex items-center gap-1 pointer-events-auto">
-              {cardUrl && !isCurriculumView && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => router.push(cardUrl)}
-                >
-                  <ExternalLink className="h-4 w-4" />
-                </Button>
-              )}
-              {isCurriculumView && !isWeekView && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={cn(
-                    "h-6 w-6 hover:bg-muted",
-                    isInCurriculum && "opacity-50 cursor-not-allowed"
-                  )}
-                  onClick={() => onAddToCurriculum?.(card.id)}
-                  disabled={isInCurriculum}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              )}
-              {isWeekView && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 hover:bg-destructive hover:text-destructive-foreground"
-                  onClick={() => onRemoveFromCurriculum?.(card.id)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
               {showEditButtons && !isCurriculumView && !isWeekView && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -187,57 +121,40 @@ export function KanbanCard({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <Dialog>
-                      <DialogTrigger asChild>
+                    <CardDialog
+                      card={card}
+                      sectionId={card.sectionId}
+                      onSave={async (data) => {
+                        const updateData = {
+                          ...data,
+                          id: card.id,
+                        };
+                        
+                        try {
+                          const response = await fetch(`/api/concepts/${card.id}`, {
+                            method: 'PATCH',
+                            headers: {
+                              'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(updateData),
+                          });
+                          
+                          if (!response.ok) {
+                            throw new Error("Failed to update concept");
+                          }
+                          
+                          const result = await response.json();
+                          onUpdateCard?.(updateData);
+                        } catch (error) {
+                          console.error("Error updating concept:", error);
+                        }
+                      }}
+                      trigger={
                         <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                           Edit Concept
                         </DropdownMenuItem>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Edit Concept</DialogTitle>
-                        </DialogHeader>
-                        <form onSubmit={handleEdit} className="space-y-4">
-                          <Input
-                            placeholder="Concept Title"
-                            value={editTitle}
-                            onChange={(e) => setEditTitle(e.target.value)}
-                            required
-                          />
-                          <Textarea
-                            placeholder="Concept Description"
-                            value={editDescription}
-                            onChange={(e) => setEditDescription(e.target.value)}
-                          />
-                          <div className="space-y-2">
-                            <ImageUpload
-                              value={editImage}
-                              onChange={(url) => setEditImage(url || "")}
-                              disabled={false}
-                            />
-                            {editImage && (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="w-full"
-                                onClick={() => setEditImage("")}
-                              >
-                                Remove Image
-                              </Button>
-                            )}
-                          </div>
-                          <div className="flex justify-end gap-2">
-                            <DialogClose asChild>
-                              <Button type="button" variant="outline">
-                                Cancel
-                              </Button>
-                            </DialogClose>
-                            <Button type="submit">Save Changes</Button>
-                          </div>
-                        </form>
-                      </DialogContent>
-                    </Dialog>
+                      }
+                    />
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <DropdownMenuItem
@@ -269,12 +186,22 @@ export function KanbanCard({
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
+              {isWeekView && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 hover:bg-destructive hover:text-destructive-foreground"
+                  onClick={() => onRemoveFromCurriculum?.(card.id)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </div>
 
-          {showDescription && card.description && (
+          {showDescription && (card.shortDescription || card.description) && (
             <p className="~text-xs/sm text-muted-foreground line-clamp-3">
-              {card.description}
+              {card.shortDescription || card.description}
             </p>
           )}
 
