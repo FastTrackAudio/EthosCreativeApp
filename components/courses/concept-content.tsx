@@ -546,19 +546,26 @@ export function ConceptContent({
         </div>
       ) : (
         <div className="space-y-8">
-          {/* Show first video block in editor mode */}
-          {editorMode && contentBlocks.find(b => b.type === "video") && (
-            <div className="relative group">
-              {renderBlock(contentBlocks.find(b => b.type === "video"), 
-                contentBlocks.findIndex(b => b.type === "video"))}
-            </div>
+          {/* First video block - only show in editor mode */}
+          {editorMode && (
+            <>
+              {contentBlocks
+                .filter(block => block.type === "video")
+                .slice(0, 1)
+                .map((block, idx) => (
+                  <div key={block.id} className="relative group">
+                    {renderBlock(block, contentBlocks.indexOf(block))}
+                  </div>
+                ))}
+            </>
           )}
           
           {/* Rest of the content blocks */}
           {contentBlocks
             .filter((block, index) => {
-              // Skip the first video block in both editor and viewer mode
-              if (block.type === "video" && 
+              // In editor mode, skip the first video as it's already shown above
+              // In viewer mode, show all blocks
+              if (editorMode && block.type === "video" && 
                   contentBlocks.findIndex(b => b.type === "video") === index) {
                 return false;
               }
