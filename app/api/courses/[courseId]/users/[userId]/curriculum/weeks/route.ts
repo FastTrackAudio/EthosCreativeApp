@@ -16,36 +16,3 @@ export async function POST(
     return new NextResponse("Error adding curriculum week", { status: 500 });
   }
 }
-
-// When removing concepts, don't delete the week if it has a placeholder
-export async function DELETE(
-  request: Request,
-  { params }: { params: { courseId: string; userId: string } }
-) {
-  try {
-    const { conceptId } = await request.json();
-    
-    // Check if this is a placeholder concept
-    const concept = await prisma.concept.findUnique({
-      where: { id: conceptId },
-    });
-
-    if (!concept?.title.includes('Placeholder')) {
-      // Only delete non-placeholder concepts
-      await prisma.userCurriculum.delete({
-        where: {
-          userId_courseId_conceptId: {
-            userId: params.userId,
-            courseId: params.courseId,
-            conceptId: conceptId,
-          },
-        },
-      });
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Error removing from curriculum:", error);
-    return new NextResponse("Error removing from curriculum", { status: 500 });
-  }
-}

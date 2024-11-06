@@ -8,6 +8,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { ConceptCard, KanbanSection } from "@/types/kanban";
 import { Button } from "@/components/ui/button";
+import { toast } from "react-toastify";
 
 type ConceptUpdateData = Partial<ConceptCard> & {
   id: string;
@@ -79,19 +80,18 @@ export default function ManageSectionsPage({
   });
 
   // Delete section mutation
-  const deleteSection = useMutation({
+  const deleteSectionMutation = useMutation({
     mutationFn: async (sectionId: string) => {
-      await axios.delete(
-        `/api/courses/${params.courseId}/sections/${sectionId}`
-      );
+      await axios.delete(`/api/sections/${sectionId}`);
     },
     onSuccess: () => {
+      toast.success("Section deleted");
       queryClient.invalidateQueries({
         queryKey: ["sections", params.courseId],
       });
-      queryClient.invalidateQueries({
-        queryKey: ["concepts", params.courseId],
-      });
+    },
+    onError: () => {
+      toast.error("Failed to delete section");
     },
   });
 
@@ -261,7 +261,7 @@ export default function ManageSectionsPage({
                 courseId={params.courseId}
                 onCreateSection={(data) => createSection.mutate(data)}
                 onUpdateSection={(data) => updateSection.mutate(data)}
-                onDeleteSection={(id) => deleteSection.mutate(id)}
+                onDeleteSection={(id) => deleteSectionMutation.mutate(id)}
                 onCreateCard={(data) => createConcept.mutate(data)}
                 onUpdateCard={(data) => updateConcept.mutate(data)}
                 onDeleteCard={(id) => deleteConcept.mutate(id)}
