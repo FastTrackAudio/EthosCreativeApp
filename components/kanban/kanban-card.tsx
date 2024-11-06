@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { MoreVertical, X, ExternalLink } from "lucide-react";
+import { MoreVertical, X, ExternalLink, Plus } from "lucide-react";
 import Image from "next/image";
 import { ConceptCard } from "@/types/kanban";
 import { useRouter } from "next/navigation";
@@ -114,6 +114,19 @@ export function KanbanCard({
               {card.shortTitle || card.title}
             </h3>
             <div className="flex items-center gap-1 pointer-events-auto">
+              {isCurriculumView && !isInCurriculum && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAddToCurriculum?.(card.id);
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              )}
               {showEditButtons && !isCurriculumView && !isWeekView && (
                 <>
                   {cardUrl && (

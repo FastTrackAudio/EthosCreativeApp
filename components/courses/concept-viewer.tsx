@@ -11,6 +11,7 @@ import { ConceptContent } from "@/components/courses/concept-content";
 import { ConceptListItem } from "@/components/courses/concept-list-item";
 import { ConceptCompleteButton } from "@/components/courses/concept-complete-button";
 import { toast } from "sonner";
+import { useMemo } from "react";
 
 interface ConceptViewerProps {
   courseId: string;
@@ -21,20 +22,43 @@ export function ConceptViewer({ courseId, conceptId }: ConceptViewerProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
 
+  // Fetch curriculum instead of all concepts
+  const { data: curriculum } = useQuery({
+    queryKey: ["user-curriculum", courseId],
+    queryFn: async () => {
+      const response = await axios.get(`/api/courses/${courseId}/curriculum`);
+      return response.data;
+    },
+  });
+
+  // Transform curriculum data for the sidebar
+  const orderedConcepts = useMemo(() => {
+    if (!curriculum) return [];
+
+    return curriculum
+      .sort((a: any, b: any) => {
+        if (a.weekId !== b.weekId) {
+          return parseInt(a.weekId) - parseInt(b.weekId);
+        }
+        return a.order - b.order;
+      })
+      .map((entry: any) => ({
+        id: entry.concept.id,
+        title: entry.concept.title,
+        shortTitle: entry.concept.shortTitle,
+        description: entry.concept.description,
+        shortDescription: entry.concept.shortDescription,
+        thumbnailUrl: entry.concept.imageUrl,
+        sectionTitle: `Week ${entry.weekId}`,
+        isCompleted: entry.isCompleted,
+      }));
+  }, [curriculum]);
+
   // Fetch course data
   const { data: course } = useQuery({
     queryKey: ["course", courseId],
     queryFn: async () => {
       const response = await axios.get(`/api/courses/${courseId}`);
-      return response.data;
-    },
-  });
-
-  // Fetch concepts for sidebar
-  const { data: concepts } = useQuery({
-    queryKey: ["concepts", courseId],
-    queryFn: async () => {
-      const response = await axios.get(`/api/courses/${courseId}/concepts`);
       return response.data;
     },
   });
@@ -92,10 +116,10 @@ export function ConceptViewer({ courseId, conceptId }: ConceptViewerProps) {
 
   // Function to find next concept
   const findNextConcept = () => {
-    if (!concepts) return null;
-    const currentIndex = concepts.findIndex(c => c.id === conceptId);
-    if (currentIndex === -1 || currentIndex === concepts.length - 1) return null;
-    return concepts[currentIndex + 1];
+    if (!orderedConcepts) return null;
+    const currentIndex = orderedConcepts.findIndex(c => c.id === conceptId);
+    if (currentIndex === -1 || currentIndex === orderedConcepts.length - 1) return null;
+    return orderedConcepts[currentIndex + 1];
   };
 
   const nextConcept = findNextConcept();
@@ -179,36 +203,26 @@ export function ConceptViewer({ courseId, conceptId }: ConceptViewerProps) {
           <h2 className="text-xl font-semibold mb-4">Course Content</h2>
           <ScrollArea className="h-[calc(100vh-12rem)]">
             <div className="space-y-3 pr-4">
-              {concepts?.map((concept, index) => {
-                const section = sections?.find(
-                  (s) => s.id === concept.sectionId
-                );
-
-                const isCompleted = concept.completions?.some(
-                  (completion) => completion.completed
-                );
-
-                return (
-                  <Link
-                    key={concept.id}
-                    href={`/dashboard/my-courses/${courseId}/concepts/${concept.id}`}
-                  >
-                    <ConceptListItem
-                      title={concept.title}
-                      shortTitle={concept.shortTitle}
-                      description={concept.description}
-                      shortDescription={concept.shortDescription}
-                      thumbnailUrl={concept.thumbnailUrl}
-                      sectionTitle={section?.title || ""}
-                      isActive={concept.id === conceptId}
-                      isCompleted={isCompleted}
-                      index={index}
-                      onClick={() => {}}
-                      onToggleComplete={() => handleToggleComplete(concept.id)}
-                    />
-                  </Link>
-                );
-              })}
+              {orderedConcepts?.map((concept: any, index: number) => (
+                <Link
+                  key={concept.id}
+                  href={`/dashboard/my-courses/${courseId}/concepts/${concept.id}`}
+                >
+                  <ConceptListItem
+                    title={concept.title}
+                    shortTitle={concept.shortTitle}
+                    description={concept.description}
+                    shortDescription={concept.shortDescription}
+                    thumbnailUrl={concept.thumbnailUrl}
+                    sectionTitle={concept.sectionTitle}
+                    isActive={concept.id === conceptId}
+                    isCompleted={concept.isCompleted}
+                    index={index}
+                    onClick={() => {}}
+                    onToggleComplete={() => handleToggleComplete(concept.id)}
+                  />
+                </Link>
+              ))}
             </div>
           </ScrollArea>
         </div>

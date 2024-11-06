@@ -57,67 +57,61 @@ export function EnrolledCourseView({
   nextConcept,
   onCompleteAction,
 }: EnrolledCourseViewProps) {
-  // Fetch curriculum order
-  const { data: curriculum } = useQuery<CurriculumEntry[]>({
-    queryKey: ["curriculum", courseId],
+  // Fetch user's curriculum
+  const { data: curriculum, isLoading: curriculumLoading } = useQuery({
+    queryKey: ["user-curriculum", courseId],
     queryFn: async () => {
-      const response = await axios.get(`/api/courses/${courseId}/curriculum`)
-      return response.data
+      try {
+        const response = await axios.get(`/api/courses/${courseId}/curriculum`);
+        console.log("Curriculum response:", response.data);
+        return response.data;
+      } catch (error) {
+        console.error("Error fetching curriculum:", error);
+        return [];
+      }
     },
-  })
+  });
 
-  // Flatten all concepts from sections
-  const allConcepts = sections.flatMap((section) =>
-    section.concepts.map((concept) => ({
-      ...concept,
-      sectionTitle: section.title,
-    }))
-  )
-
-  // Group concepts by week and sort within each week
+  // Filter and organize concepts based on curriculum
   const organizedConcepts = useMemo(() => {
-    if (!curriculum) return allConcepts
+    if (!curriculum?.length) {
+      console.log("No curriculum data");
+      return [];
+    }
 
-    // Create a map for quick concept lookup
-    const conceptMap = new Map(
-      allConcepts.map((concept) => [concept.id, concept])
-    )
+    try {
+      // The curriculum data already contains the concept information
+      const orderedConcepts = curriculum.map(entry => ({
+        id: entry.concept.id,
+        title: entry.concept.title,
+        description: entry.concept.description,
+        shortTitle: entry.concept.shortTitle,
+        shortDescription: entry.concept.shortDescription,
+        imageUrl: entry.concept.imageUrl,
+        sectionId: entry.concept.sectionId,
+        sectionTitle: entry.concept.sectionTitle,
+        weekNumber: entry.weekId,
+        curriculumOrder: entry.order,
+        completed: entry.isCompleted
+      }))
+      .sort((a, b) => {
+        if (a.weekNumber !== b.weekNumber) {
+          return parseInt(a.weekNumber) - parseInt(b.weekNumber);
+        }
+        return a.curriculumOrder - b.curriculumOrder;
+      });
 
-    // Group by week
-    const weekGroups = curriculum.reduce((acc, curr) => {
-      const concept = conceptMap.get(curr.conceptId)
-      if (!concept) return acc
+      console.log("Organized concepts:", orderedConcepts);
+      return orderedConcepts;
+    } catch (error) {
+      console.error("Error organizing concepts:", error);
+      return [];
+    }
+  }, [curriculum]);
 
-      const week = curr.weekId
-      if (!acc[week]) acc[week] = []
-
-      acc[week].push({
-        ...concept,
-        curriculumOrder: curr.order,
-        weekId: curr.weekId,
-      })
-      return acc
-    }, {} as Record<string, ConceptWithCurriculum[]>)
-
-    // Sort within each week and flatten
-    return Object.entries(weekGroups)
-      .sort(([weekA], [weekB]) => weekA.localeCompare(weekB))
-      .flatMap(([_, concepts]) =>
-        concepts.sort((a, b) => a.curriculumOrder - b.curriculumOrder)
-      )
-  }, [curriculum, allConcepts])
-
-  // Add concepts that aren't in curriculum at the end
-  const sortedConcepts = useMemo(() => {
-    if (!curriculum) return allConcepts
-
-    const curriculumConceptIds = new Set(curriculum.map((c) => c.conceptId))
-    const nonCurriculumConcepts = allConcepts.filter(
-      (concept) => !curriculumConceptIds.has(concept.id)
-    )
-
-    return [...organizedConcepts, ...nonCurriculumConcepts]
-  }, [curriculum, organizedConcepts, allConcepts])
+  if (curriculumLoading) {
+    return <div>Loading curriculum...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -136,19 +130,31 @@ export function EnrolledCourseView({
       {/* Course Content */}
       <div className="container max-w-5xl py-8">
         <div className="space-y-8">
-          {/* Next Concept Card */}
-          {nextConcept && (
-            <div className="mb-12">
+          {/* Next Concept Card or Caught Up Message */}
+          <div className="mb-12">
+            {nextConcept && organizedConcepts.some(c => c.id === nextConcept.id) ? (
               <NextConceptCard concept={nextConcept} courseId={courseId} />
-            </div>
-          )}
+            ) : (
+              <div className="bg-gradient-to-br from-primary/10 to-purple-600/10 rounded-lg p-8 text-center">
+                <h3 className="text-2xl font-semibold mb-2">
+                  You're all caught up! 🎉
+                </h3>
+                <p className="text-muted-foreground">
+                  Great job! You've completed all available concepts for now.
+                </p>
+              </div>
+            )}
+          </div>
 
-          {/* Concept List */}
+          {/* Concept List - Only show organized concepts */}
           <div className="bg-card p-8 rounded-lg border border-border shadow-sm">
-            <ConceptList concepts={sortedConcepts} courseId={courseId} />
+            <ConceptList 
+              concepts={organizedConcepts} 
+              courseId={courseId} 
+            />
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }
