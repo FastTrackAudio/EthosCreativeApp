@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { MoreVertical, X } from "lucide-react";
+import { MoreVertical, X, ExternalLink } from "lucide-react";
 import Image from "next/image";
 import { ConceptCard } from "@/types/kanban";
 import { useRouter } from "next/navigation";
@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Card } from "@/components/ui/card";
 import { CardDialog } from "./card-dialog";
+import Link from "next/link";
 
 interface KanbanCardProps {
   card: ConceptCard;
@@ -114,77 +115,73 @@ export function KanbanCard({
             </h3>
             <div className="flex items-center gap-1 pointer-events-auto">
               {showEditButtons && !isCurriculumView && !isWeekView && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-6 w-6">
-                      <MoreVertical className="h-4 w-4" />
+                <>
+                  {cardUrl && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      asChild
+                    >
+                      <Link href={cardUrl.replace('/preview', '')}>
+                        <ExternalLink className="h-4 w-4" />
+                      </Link>
                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <CardDialog
-                      card={card}
-                      sectionId={card.sectionId}
-                      onSave={async (data) => {
-                        const updateData = {
-                          ...data,
-                          id: card.id,
-                        };
-                        
-                        try {
-                          const response = await fetch(`/api/concepts/${card.id}`, {
-                            method: 'PATCH',
-                            headers: {
-                              'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify(updateData),
-                          });
-                          
-                          if (!response.ok) {
-                            throw new Error("Failed to update concept");
-                          }
-                          
-                          const result = await response.json();
+                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-6 w-6">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <CardDialog
+                        card={card}
+                        sectionId={card.sectionId}
+                        onSave={async (data) => {
+                          const updateData = {
+                            ...data,
+                            id: card.id,
+                          };
                           onUpdateCard?.(updateData);
-                        } catch (error) {
-                          console.error("Error updating concept:", error);
+                        }}
+                        trigger={
+                          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                            Edit Concept
+                          </DropdownMenuItem>
                         }
-                      }}
-                      trigger={
-                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                          Edit Concept
-                        </DropdownMenuItem>
-                      }
-                    />
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onSelect={(e) => e.preventDefault()}
-                        >
-                          Delete Concept
-                        </DropdownMenuItem>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Concept</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete this concept? This
-                            action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => onDeleteCard?.(card.id)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      />
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onSelect={(e) => e.preventDefault()}
                           >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                            Delete Concept
+                          </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Concept</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete this concept? This
+                              action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => onDeleteCard?.(card.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
               )}
               {isWeekView && (
                 <Button

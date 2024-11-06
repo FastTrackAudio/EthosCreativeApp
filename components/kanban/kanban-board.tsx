@@ -84,6 +84,7 @@ export function KanbanBoard({
   sectionWidth = "w-[400px]",
   curriculumWeeks = [],
   editorMode = true,
+  courseId,
   cardUrlPattern,
   onCreateSection,
   onUpdateSection,
@@ -295,16 +296,7 @@ export function KanbanBoard({
                                       card.id
                                     )}
                                     editorMode={editorMode}
-                                    cardUrl={
-                                      cardUrlPattern
-                                        ? cardUrlPattern
-                                            .replace(":conceptId", card.id)
-                                            .replace(
-                                              ":sectionId",
-                                              card.sectionId
-                                            )
-                                        : undefined
-                                    }
+                                    cardUrl={`/dashboard/admin/manage-courses/${courseId}/sections/${card.sectionId}/concepts/${card.id}/preview`}
                                     onAddToCurriculum={onAddToCurriculum}
                                     onRemoveFromCurriculum={
                                       onRemoveFromCurriculum

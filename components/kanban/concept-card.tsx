@@ -15,6 +15,7 @@ import { CardDialog } from "./card-dialog"
 import { Draggable } from "@hello-pangea/dnd"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
+import Link from "next/link"
 
 interface ConceptCardProps {
   card: ConceptCardType
@@ -28,6 +29,7 @@ interface ConceptCardProps {
   onUpdate: (card: Partial<ConceptCardType>) => void
   onDelete: (id: string) => void
   onAddToCurriculum?: (conceptId: string) => void
+  courseId?: string
 }
 
 export function ConceptCard({
@@ -42,6 +44,7 @@ export function ConceptCard({
   onUpdate,
   onDelete,
   onAddToCurriculum,
+  courseId,
 }: ConceptCardProps) {
   const router = useRouter()
 
@@ -82,6 +85,18 @@ export function ConceptCard({
                 >
                   {showEditButtons && (
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        asChild
+                        className="h-8"
+                      >
+                        <Link
+                          href={`/dashboard/admin/manage-courses/${courseId}/sections/${card.sectionId}/concepts/${card.id}/preview`}
+                        >
+                          Open
+                        </Link>
+                      </Button>
                       <CardDialog
                         card={card}
                         sectionId={card.sectionId}
