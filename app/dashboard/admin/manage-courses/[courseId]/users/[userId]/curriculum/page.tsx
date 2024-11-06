@@ -234,19 +234,47 @@ export default function ManageUserCurriculumPage({ params }: PageProps) {
 
   const addWeekMutation = useMutation({
     mutationFn: async (weekId: string) => {
-      await axios.post(
-        `/api/courses/${params.courseId}/users/${params.userId}/curriculum/weeks`,
-        {
-          weekId,
+      console.log("Mutation: Adding week", weekId);
+      return { weekId };
+    },
+    onMutate: async (weekId) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({
+        queryKey: ["curriculum", params.courseId, params.userId],
+      });
+
+      // Get current curriculum data
+      const previousCurriculum = queryClient.getQueryData<CurriculumData>([
+        "curriculum",
+        params.courseId,
+        params.userId,
+      ]);
+
+      // Optimistically update curriculum
+      queryClient.setQueryData<CurriculumData>(
+        ["curriculum", params.courseId, params.userId],
+        (old) => {
+          if (!old) return { weeks: [] };
+          return {
+            weeks: [
+              ...old.weeks,
+              {
+                id: weekId,
+                weekId: weekId,
+                title: `Week ${weekId}`,
+                concepts: [],
+              },
+            ],
+          };
         }
-      )
+      );
+
+      return { previousCurriculum };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["curriculum", params.courseId, params.userId],
-      })
+      console.log("Week added successfully");
     },
-  })
+  });
 
   const reorderConceptsMutation = useMutation({
     mutationFn: async ({

@@ -18,7 +18,7 @@ interface CurriculumWeeksProps {
   isLoading: boolean
   selectedWeek: string | null
   onSelectWeek: (weekId: string) => void
-  onUpdateWeek: (weekId: string, data: unknown) => void
+  onUpdateWeek: (weekId: string) => void
   onRemoveFromCurriculum?: (conceptId: string) => void
   onReorderConcepts?: (weekId: string, concepts: ConceptCard[]) => void
 }
@@ -32,29 +32,33 @@ export function CurriculumWeeks({
   onRemoveFromCurriculum,
   onReorderConcepts,
 }: CurriculumWeeksProps) {
-  const [displayWeeks, setDisplayWeeks] = useState<Week[]>([])
+  const [localWeeks, setLocalWeeks] = useState<Week[]>([])
   const [maxWeek, setMaxWeek] = useState(1)
 
+  // Initialize local state from props
   useEffect(() => {
-    if (weeks.length === 0) {
-      setDisplayWeeks([{ weekId: "1", concepts: [] }])
-      setMaxWeek(1)
-    } else {
-      setDisplayWeeks(weeks)
+    if (weeks.length > 0) {
       const highestWeek = Math.max(...weeks.map((w) => parseInt(w.weekId)))
       setMaxWeek(highestWeek)
+      setLocalWeeks(weeks)
     }
   }, [weeks])
 
   const handleAddWeek = () => {
     const newWeekNumber = maxWeek + 1
-    setMaxWeek(newWeekNumber)
+    console.log("Adding new week:", newWeekNumber)
+
+    // Add new week to local state
     const newWeek = {
       weekId: newWeekNumber.toString(),
-      concepts: [],
+      concepts: []
     }
-    setDisplayWeeks([...displayWeeks, newWeek])
-    onUpdateWeek(newWeekNumber.toString(), { concepts: [] })
+    
+    setMaxWeek(newWeekNumber)
+    setLocalWeeks(prev => [...prev, newWeek])
+    
+    // Notify parent
+    onUpdateWeek(newWeekNumber.toString())
   }
 
   if (isLoading) {
@@ -63,7 +67,7 @@ export function CurriculumWeeks({
 
   return (
     <div className="space-y-4">
-      {displayWeeks.map((week) => (
+      {localWeeks.map((week) => (
         <div
           key={week.weekId}
           className={cn(
@@ -78,7 +82,10 @@ export function CurriculumWeeks({
             <Button
               variant={selectedWeek === week.weekId ? "default" : "outline"}
               size="sm"
-              onClick={() => onSelectWeek(week.weekId)}
+              onClick={(e) => {
+                e.stopPropagation()
+                onSelectWeek(week.weekId)
+              }}
             >
               {selectedWeek === week.weekId ? "Selected" : "Select"}
             </Button>
@@ -124,7 +131,11 @@ export function CurriculumWeeks({
         </div>
       ))}
 
-      <Button variant="outline" className="w-full" onClick={handleAddWeek}>
+      <Button 
+        variant="outline" 
+        className="w-full" 
+        onClick={handleAddWeek}
+      >
         <Plus className="h-4 w-4 mr-2" />
         Add Week {maxWeek + 1}
       </Button>
