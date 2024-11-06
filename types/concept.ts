@@ -1,4 +1,4 @@
-type ContentBlockType = "video" | "audio" | "text" | "image"
+type ContentBlockType = "video" | "audio" | "text" | "image" | "file"
 
 interface BaseContentBlock {
   id: string
@@ -27,10 +27,20 @@ interface ImageBlock extends BaseContentBlock {
   content: {
     url: string
     title?: string
-    size?: {
+    size: {
       width: string
       height: string
     }
+  }
+}
+
+interface FileBlock extends BaseContentBlock {
+  type: "file"
+  content: {
+    url: string
+    fileName: string
+    fileType: string
+    isImage: boolean
   }
 }
 
@@ -42,7 +52,7 @@ interface TextBlock extends BaseContentBlock {
   }
 }
 
-type ContentBlock = VideoBlock | AudioBlock | ImageBlock | TextBlock
+type ContentBlock = VideoBlock | AudioBlock | ImageBlock | TextBlock | FileBlock
 
 interface ConceptContent {
   version: "1"

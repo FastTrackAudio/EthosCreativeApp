@@ -7,19 +7,29 @@ const f = createUploadthing();
 export const ourFileRouter = {
   imageUploader: f({ image: { maxFileSize: "4MB" } })
     .middleware(async () => {
-      // Get Kinde user session
       const { getUser } = getKindeServerSession();
       const user = await getUser();
-
       if (!user || !user.id) throw new UploadThingError("Unauthorized");
-
-      // Return metadata to be passed to onUploadComplete
       return { userId: user.id };
     })
     .onUploadComplete(async ({ metadata, file }) => {
-      console.log("Upload complete for userId:", metadata.userId);
-      console.log("file url", file.url);
+      return { uploadedBy: metadata.userId, url: file.url };
+    }),
 
+  fileUploader: f({
+    pdf: { maxFileSize: "32MB" },
+    image: { maxFileSize: "8MB" },
+    text: { maxFileSize: "8MB" },
+    audio: { maxFileSize: "32MB" },
+    video: { maxFileSize: "64MB" },
+  })
+    .middleware(async () => {
+      const { getUser } = getKindeServerSession();
+      const user = await getUser();
+      if (!user || !user.id) throw new UploadThingError("Unauthorized");
+      return { userId: user.id };
+    })
+    .onUploadComplete(async ({ metadata, file }) => {
       return { uploadedBy: metadata.userId, url: file.url };
     }),
 } satisfies FileRouter;

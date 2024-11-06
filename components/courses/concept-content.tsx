@@ -40,6 +40,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { Textarea } from "@/components/ui/textarea";
+import { FileUploadButton } from "@/components/ui/file-upload-button";
+import { PDFViewer } from "@/components/ui/pdf-viewer";
+import { FileIcon } from "lucide-react";
+import { Download } from "lucide-react";
 
 interface ConceptContentProps {
   conceptId: string;
@@ -355,6 +359,164 @@ export function ConceptContent({
     setHasUnsavedChanges(true);
   };
 
+  const renderBlock = (block: any, index: number) => {
+    switch (block.type) {
+      case "video": {
+        return (
+          <ResizableVideo
+            src={block.content.url}
+            title={block.content.title || "Video content"}
+            initialWidth={block.content.size?.width || "100%"}
+            initialHeight={block.content.size?.height || "auto"}
+          />
+        );
+      }
+      case "audio": {
+        return (
+          <AudioPlayer
+            src={block.content.url}
+            title={block.content.title}
+          />
+        );
+      }
+      case "image": {
+        return (
+          <ResizableImage
+            src={block.content.url}
+            alt={block.content.title || "Content image"}
+            initialWidth={block.content.size?.width}
+            initialHeight={block.content.size?.height}
+            editable={editorMode}
+            onResize={
+              editorMode
+                ? (width, height) => {
+                    const newBlocks = [...contentBlocks];
+                    newBlocks[index] = {
+                      ...block,
+                      content: {
+                        ...block.content,
+                        size: {
+                          width: `${width}px`,
+                          height: `${height}px`,
+                        },
+                      },
+                    };
+                    setContentBlocks(newBlocks);
+                    setHasUnsavedChanges(true);
+                  }
+                : undefined
+            }
+          />
+        );
+      }
+      case "text": {
+        return (
+          <div className="relative group">
+            {editorMode && (
+              <div className="absolute right-2 top-2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    "h-8 w-8",
+                    block.content.isTransparent && "text-muted-foreground"
+                  )}
+                  onClick={() => handleToggleTransparent(index)}
+                  title="Toggle Background"
+                >
+                  <EyeOff className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => handleDeleteBlock(index)}
+                  title="Delete Block"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            <BlockNoteEditorComponent
+              conceptId={conceptId}
+              courseId={courseId}
+              sectionId={concept?.sectionId || ""}
+              initialContent={block.content.textContent}
+              editorMode={editorMode}
+              isTransparent={block.content.isTransparent}
+              onChange={(content) => {
+                const newBlocks = [...contentBlocks];
+                newBlocks[index] = {
+                  ...block,
+                  content: { ...block.content, textContent: content },
+                };
+                setContentBlocks(newBlocks);
+                setHasUnsavedChanges(true);
+              }}
+            />
+          </div>
+        );
+      }
+      case "embed": {
+        return (
+          <div className="w-full flex justify-center items-center">
+            <div className="w-full max-w-[800px] mx-auto flex justify-center">
+              <div
+                className="~min-h-[200px]/[600px] w-full flex justify-center items-center"
+                dangerouslySetInnerHTML={{ __html: block.content.html }}
+              />
+            </div>
+          </div>
+        );
+      }
+      case "file": {
+        // Handle PDFs
+        if (block.content.fileType === 'application/pdf') {
+          return (
+            <PDFViewer 
+              url={block.content.url} 
+              fileName={block.content.fileName} 
+            />
+          );
+        }
+        
+        // Handle images
+        if (block.content.isImage) {
+          return (
+            <ResizableImage
+              src={block.content.url}
+              alt={block.content.fileName}
+              editable={editorMode}
+              // ... other props
+            />
+          );
+        }
+        
+        // Handle other file types with download button
+        return (
+          <div className="flex items-center gap-2 p-4 border rounded-lg">
+            <FileIcon className="h-5 w-5" />
+            <span className="flex-1">{block.content.fileName}</span>
+            <Button variant="outline" size="sm" asChild>
+              <a 
+                href={block.content.url} 
+                download 
+                target="_blank" 
+                rel="noopener noreferrer"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Download
+              </a>
+            </Button>
+          </div>
+        );
+      }
+      default: {
+        return null;
+      }
+    }
+  };
+
   return (
     <div className="container mx-auto p-4 max-w-6xl">
       {/* Only show title and save button in editor mode */}
@@ -537,77 +699,7 @@ export function ConceptContent({
                   </div>
                 )}
 
-                {block.type === "video" && (
-                  <ResizableVideo
-                    src={block.content.url}
-                    title={block.content.title || "Video content"}
-                    initialWidth={block.content.size?.width || "100%"}
-                    initialHeight={block.content.size?.height || "auto"}
-                  />
-                )}
-                {block.type === "audio" && (
-                  <AudioPlayer
-                    src={block.content.url}
-                    title={block.content.title}
-                  />
-                )}
-                {block.type === "image" && (
-                  <ResizableImage
-                    src={block.content.url!}
-                    alt={block.content.title || "Content image"}
-                    initialWidth={block.content.size?.width}
-                    initialHeight={block.content.size?.height}
-                    editable={editorMode}
-                    onResize={
-                      editorMode
-                        ? (width, height) => {
-                            const newBlocks = [...contentBlocks];
-                            newBlocks[index] = {
-                              ...block,
-                              content: {
-                                ...block.content,
-                                size: {
-                                  width: `${width}px`,
-                                  height: height ? `${height}px` : "auto",
-                                },
-                              },
-                            };
-                            setContentBlocks(newBlocks);
-                            setHasUnsavedChanges(true);
-                          }
-                        : undefined
-                    }
-                  />
-                )}
-                {block.type === "text" && (
-                  <BlockNoteEditorComponent
-                    conceptId={conceptId}
-                    courseId={courseId}
-                    sectionId={concept?.sectionId || ""}
-                    initialContent={block.content.textContent}
-                    editorMode={editorMode}
-                    isTransparent={block.content.isTransparent}
-                    onChange={(content) => {
-                      const newBlocks = [...contentBlocks];
-                      newBlocks[index] = {
-                        ...block,
-                        content: { ...block.content, textContent: content },
-                      };
-                      setContentBlocks(newBlocks);
-                      setHasUnsavedChanges(true);
-                    }}
-                  />
-                )}
-                {block.type === "embed" && (
-                  <div className="w-full flex justify-center items-center">
-                    <div className="w-full max-w-[800px] mx-auto flex justify-center">
-                      <div
-                        className="~min-h-[200px]/[600px] w-full flex justify-center items-center"
-                        dangerouslySetInnerHTML={{ __html: block.content.html }}
-                      />
-                    </div>
-                  </div>
-                )}
+                {renderBlock(block, index)}
               </div>
             ))}
         </div>
@@ -810,6 +902,25 @@ export function ConceptContent({
               </div>
             </DialogContent>
           </Dialog>
+
+          <FileUploadButton 
+            onUploadComplete={(url, fileName, fileType) => {
+              const newBlock = {
+                id: `file-${Date.now()}`,
+                type: "file",
+                order: contentBlocks.length,
+                content: {
+                  url,
+                  fileName,
+                  fileType,
+                  isImage: fileType.startsWith('image/'),
+                },
+              };
+              setContentBlocks([...contentBlocks, newBlock]);
+              setHasUnsavedChanges(true);
+              toast.success("File added to content");
+            }} 
+          />
         </div>
       )}
 

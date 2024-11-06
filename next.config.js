@@ -8,7 +8,20 @@ const nextConfig = {
       "images.unsplash.com", // Optional: For Unsplash images if used
     ],
   },
-  // ... any other config options you have
+  webpack: (config, { isServer }) => {
+    // Canvas is only needed on the server
+    if (isServer) {
+      config.externals.push({
+        canvas: 'commonjs canvas',
+      });
+    }
+
+    config.resolve.alias.canvas = false;
+    config.resolve.alias.encoding = false;
+
+    return config;
+  },
+  transpilePackages: ['react-pdf', 'pdfjs-dist']
 }
 
 module.exports = nextConfig

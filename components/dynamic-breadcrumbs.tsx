@@ -43,10 +43,19 @@ export default function DynamicBreadcrumbs() {
     queryKey: ["section", sectionId],
     queryFn: async () => {
       if (!sectionId) return null;
-      const response = await axios.get(`/api/sections/${sectionId}`);
-      return response.data;
+      try {
+        const response = await axios.get(`/api/sections/${sectionId}`);
+        return response.data;
+      } catch (error) {
+        // If section not found, return null instead of throwing
+        if (axios.isAxiosError(error) && error.response?.status === 404) {
+          return null;
+        }
+        throw error;
+      }
     },
     enabled: !!sectionId,
+    retry: false, // Don't retry on failure
   });
 
   // Fetch concept data if conceptId exists
@@ -54,10 +63,19 @@ export default function DynamicBreadcrumbs() {
     queryKey: ["concept", conceptId],
     queryFn: async () => {
       if (!conceptId) return null;
-      const response = await axios.get(`/api/concepts/${conceptId}`);
-      return response.data;
+      try {
+        const response = await axios.get(`/api/concepts/${conceptId}`);
+        return response.data;
+      } catch (error) {
+        // If concept not found, return null instead of throwing
+        if (axios.isAxiosError(error) && error.response?.status === 404) {
+          return null;
+        }
+        throw error;
+      }
     },
     enabled: !!conceptId,
+    retry: false, // Don't retry on failure
   });
 
   useEffect(() => {
@@ -83,7 +101,7 @@ export default function DynamicBreadcrumbs() {
           });
         }
 
-        // Add Section if it exists
+        // Add Section if it exists and was found
         if (sectionId && section) {
           newBreadcrumbs.push({
             name: section.title,
@@ -91,7 +109,7 @@ export default function DynamicBreadcrumbs() {
           });
         }
 
-        // Add Concept if it exists
+        // Add Concept if it exists and was found
         if (conceptId && concept) {
           newBreadcrumbs.push({
             name: concept.title,
@@ -110,6 +128,8 @@ export default function DynamicBreadcrumbs() {
 
     generateBreadcrumbs();
   }, [pathname, course, section, concept, courseId, sectionId, conceptId]);
+
+  if (breadcrumbs.length <= 1) return null;
 
   return (
     <Breadcrumb>
