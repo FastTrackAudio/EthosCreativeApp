@@ -92,7 +92,7 @@ export function EnrolledCourseView({
         sectionTitle: entry.concept.sectionTitle,
         weekNumber: entry.weekId,
         curriculumOrder: entry.order,
-        completed: entry.isCompleted
+        isCompleted: entry.isCompleted
       }))
       .sort((a, b) => {
         if (a.weekNumber !== b.weekNumber) {
@@ -108,6 +108,12 @@ export function EnrolledCourseView({
       return [];
     }
   }, [curriculum]);
+
+  // Find the next incomplete concept
+  const nextIncompleteConcept = useMemo(() => {
+    if (!organizedConcepts.length) return null;
+    return organizedConcepts.find(concept => !concept.isCompleted) || null;
+  }, [organizedConcepts]);
 
   if (curriculumLoading) {
     return <div>Loading curriculum...</div>;
@@ -132,8 +138,11 @@ export function EnrolledCourseView({
         <div className="space-y-8">
           {/* Next Concept Card or Caught Up Message */}
           <div className="mb-12">
-            {nextConcept && organizedConcepts.some(c => c.id === nextConcept.id) ? (
-              <NextConceptCard concept={nextConcept} courseId={courseId} />
+            {nextIncompleteConcept ? (
+              <NextConceptCard 
+                concept={nextIncompleteConcept} 
+                courseId={courseId} 
+              />
             ) : (
               <div className="bg-gradient-to-br from-primary/10 to-purple-600/10 rounded-lg p-8 text-center">
                 <h3 className="text-2xl font-semibold mb-2">

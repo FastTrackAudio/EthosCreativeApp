@@ -16,26 +16,50 @@ export async function completeConceptAction(
   }
 
   try {
-    await prisma.userCurriculum.upsert({
+    // Check if completion exists
+    const existingCompletion = await prisma.conceptCompletion.findFirst({
       where: {
-        userId_courseId_conceptId: {
+        conceptId: conceptId,
+        userId: user.id,
+      },
+    });
+
+    await prisma.$transaction([
+      // Update or create curriculum entry
+      prisma.userCurriculum.upsert({
+        where: {
+          userId_courseId_conceptId: {
+            userId: user.id,
+            courseId: courseId,
+            conceptId: conceptId,
+          },
+        },
+        update: {
+          isCompleted: !existingCompletion, // Toggle the completion status
+        },
+        create: {
           userId: user.id,
           courseId: courseId,
           conceptId: conceptId,
+          weekId: "1",
+          order: 0,
+          isCompleted: true,
         },
-      },
-      update: {
-        isCompleted: true,
-      },
-      create: {
-        userId: user.id,
-        courseId: courseId,
-        conceptId: conceptId,
-        weekId: "1",
-        order: 0,
-        isCompleted: true,
-      },
-    })
+      }),
+      // Handle completion record
+      existingCompletion 
+        ? prisma.conceptCompletion.delete({
+            where: {
+              id: existingCompletion.id,
+            },
+          })
+        : prisma.conceptCompletion.create({
+            data: {
+              userId: user.id,
+              conceptId: conceptId,
+            },
+          }),
+    ]);
 
     revalidatePath(`/dashboard/my-courses/${courseId}`)
   } catch (error) {

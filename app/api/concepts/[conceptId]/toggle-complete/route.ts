@@ -1,53 +1,102 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/app/utils/db";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 
 export async function POST(
-  req: Request,
+  request: Request,
   { params }: { params: { conceptId: string } }
 ) {
   try {
     const { getUser } = getKindeServerSession();
     const user = await getUser();
-    
+
     if (!user || !user.id) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    // Find existing completion
-    const existingCompletion = await prisma.conceptCompletion.findUnique({
+    // Get the current completion status
+    const existingCompletion = await prisma.conceptCompletion.findFirst({
       where: {
-        userId_conceptId: {
-          userId: user.id,
-          conceptId: params.conceptId,
-        },
+        conceptId: params.conceptId,
+        userId: user.id,
       },
     });
 
+    // Get the curriculum entry to update
+    const curriculumEntry = await prisma.userCurriculum.findFirst({
+      where: {
+        conceptId: params.conceptId,
+        userId: user.id,
+      },
+      include: {
+        concept: {
+          select: {
+            section: {
+              select: {
+                courseId: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (!curriculumEntry) {
+      return new NextResponse("Curriculum entry not found", { status: 404 });
+    }
+
+    const courseId = curriculumEntry.concept.section.courseId;
+
+    // If completion exists, delete it and mark curriculum as incomplete
     if (existingCompletion) {
-      // Toggle existing completion
-      const updated = await prisma.conceptCompletion.update({
-        where: {
-          id: existingCompletion.id,
-        },
-        data: {
-          completed: !existingCompletion.completed,
-        },
-      });
-      return NextResponse.json(updated);
-    } else {
-      // Create new completion record
-      const completion = await prisma.conceptCompletion.create({
+      await prisma.$transaction([
+        prisma.conceptCompletion.delete({
+          where: {
+            id: existingCompletion.id,
+          },
+        }),
+        prisma.userCurriculum.update({
+          where: {
+            userId_courseId_conceptId: {
+              userId: user.id,
+              courseId: courseId,
+              conceptId: params.conceptId,
+            },
+          },
+          data: {
+            isCompleted: false,
+          },
+        }),
+      ]);
+
+      return NextResponse.json({ completed: false });
+    }
+
+    // If no completion exists, create it and mark curriculum as complete
+    await prisma.$transaction([
+      prisma.conceptCompletion.create({
         data: {
           userId: user.id,
           conceptId: params.conceptId,
-          completed: true,
         },
-      });
-      return NextResponse.json(completion);
-    }
+      }),
+      prisma.userCurriculum.update({
+        where: {
+          userId_courseId_conceptId: {
+            userId: user.id,
+            courseId: courseId,
+            conceptId: params.conceptId,
+          },
+        },
+        data: {
+          isCompleted: true,
+        },
+      }),
+    ]);
+
+    return NextResponse.json({ completed: true });
   } catch (error) {
-    console.error("Error toggling concept completion:", error);
-    return new NextResponse("Error toggling completion", { status: 500 });
+    console.error("[CONCEPT_TOGGLE_COMPLETE]", error);
+    return new NextResponse("Internal Error", { status: 500 });
   }
 } 
