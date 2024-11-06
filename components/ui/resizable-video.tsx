@@ -56,7 +56,10 @@ export function ResizableVideo({
       className="relative"
     >
       <div className="w-full h-full">
-        <CustomVideoPlayer src={src} title={title} />
+        <CustomVideoPlayer 
+          url={src}
+          thumbnailUrl=""
+        />
       </div>
     </Resizable>
   )
