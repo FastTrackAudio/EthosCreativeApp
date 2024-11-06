@@ -357,14 +357,15 @@ export function ConceptContent({
 
   return (
     <div className="container mx-auto p-4 max-w-6xl">
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold mb-2">
-              {isLoading ? <Skeleton className="h-8 w-64" /> : concept?.title}
-            </h1>
-          </div>
-          {editorMode && (
+      {/* Only show title and save button in editor mode */}
+      {editorMode && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold mb-2">
+                {isLoading ? <Skeleton className="h-8 w-64" /> : concept?.title}
+              </h1>
+            </div>
             <Button
               onClick={() => saveMutation.mutate(concept?.content)}
               className="flex items-center gap-2"
@@ -373,9 +374,9 @@ export function ConceptContent({
               <Save className="h-4 w-4" />
               {saveMutation.isPending ? "Saving..." : "Save Changes"}
             </Button>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {isLoading ? (
         <div className="space-y-8">
@@ -384,222 +385,231 @@ export function ConceptContent({
         </div>
       ) : (
         <div className="space-y-8">
-          {contentBlocks.map((block, index) => (
-            <div key={block.id} className="relative group">
-              {editorMode && (
-                <div className="absolute -left-16 top-0 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => handleMoveBlock(index, "up")}
-                    disabled={index === 0}
-                  >
-                    <ArrowUp className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => handleMoveBlock(index, "down")}
-                    disabled={index === contentBlocks.length - 1}
-                  >
-                    <ArrowDown className="h-4 w-4" />
-                  </Button>
-                  {block.type === "text" ? (
+          {contentBlocks
+            .filter((block, index) => {
+              // Skip the first video block
+              if (block.type === "video" && 
+                  contentBlocks.findIndex(b => b.type === "video") === index) {
+                return false;
+              }
+              return true;
+            })
+            .map((block, index) => (
+              <div key={block.id} className="relative group">
+                {editorMode && (
+                  <div className="absolute -left-16 top-0 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className={cn(
-                        "h-8 w-8",
-                        block.content.isTransparent && "text-muted-foreground"
-                      )}
-                      onClick={() => handleToggleTransparent(index)}
+                      className="h-8 w-8"
+                      onClick={() => handleMoveBlock(index, "up")}
+                      disabled={index === 0}
                     >
-                      <EyeOff className="h-4 w-4" />
+                      <ArrowUp className="h-4 w-4" />
                     </Button>
-                  ) : (
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-4xl">
-                        <DialogHeader>
-                          <DialogTitle>Edit {block.type}</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4 py-4">
-                          {block.type === "embed" ? (
-                            <div className="space-y-4">
-                              <div className="space-y-2">
-                                <Label>HTML Code</Label>
-                                <Textarea
-                                  value={block.content.html}
-                                  onChange={(e) =>
-                                    handleEditEmbed(index, e.target.value)
-                                  }
-                                  placeholder="Enter HTML embed code..."
-                                  className="font-mono min-h-[200px]"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label>Preview</Label>
-                                <div className="border rounded-lg p-4 bg-background">
-                                  <div
-                                    dangerouslySetInnerHTML={{
-                                      __html: block.content.html,
-                                    }}
-                                    className="w-full"
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => handleMoveBlock(index, "down")}
+                      disabled={index === contentBlocks.length - 1}
+                    >
+                      <ArrowDown className="h-4 w-4" />
+                    </Button>
+                    {block.type === "text" ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={cn(
+                          "h-8 w-8",
+                          block.content.isTransparent && "text-muted-foreground"
+                        )}
+                        onClick={() => handleToggleTransparent(index)}
+                      >
+                        <EyeOff className="h-4 w-4" />
+                      </Button>
+                    ) : (
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-4xl">
+                          <DialogHeader>
+                            <DialogTitle>Edit {block.type}</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4 py-4">
+                            {block.type === "embed" ? (
+                              <div className="space-y-4">
+                                <div className="space-y-2">
+                                  <Label>HTML Code</Label>
+                                  <Textarea
+                                    value={block.content.html}
+                                    onChange={(e) =>
+                                      handleEditEmbed(index, e.target.value)
+                                    }
+                                    placeholder="Enter HTML embed code..."
+                                    className="font-mono min-h-[200px]"
                                   />
                                 </div>
+                                <div className="space-y-2">
+                                  <Label>Preview</Label>
+                                  <div className="border rounded-lg p-4 bg-background">
+                                    <div
+                                      dangerouslySetInnerHTML={{
+                                        __html: block.content.html,
+                                      }}
+                                      className="w-full"
+                                    />
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          ) : (
-                            <>
-                              <div className="space-y-2">
-                                <Label>Title</Label>
-                                <Input
-                                  value={block.content.title || ""}
-                                  onChange={(e) => {
-                                    const newBlocks = [...contentBlocks];
-                                    newBlocks[index] = {
-                                      ...block,
-                                      content: {
-                                        ...block.content,
-                                        title: e.target.value,
-                                      },
-                                    };
-                                    setContentBlocks(newBlocks);
-                                    setHasUnsavedChanges(true);
-                                  }}
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label>URL</Label>
-                                <Input
-                                  value={block.content.url || ""}
-                                  onChange={(e) => {
-                                    const newBlocks = [...contentBlocks];
-                                    newBlocks[index] = {
-                                      ...block,
-                                      content: {
-                                        ...block.content,
-                                        url: e.target.value,
-                                      },
-                                    };
-                                    setContentBlocks(newBlocks);
-                                    setHasUnsavedChanges(true);
-                                  }}
-                                />
-                              </div>
-                              {block.type === "image" && (
-                                <ImageUpload
-                                  value={block.content.url || ""}
-                                  onChange={(url) => {
-                                    const newBlocks = [...contentBlocks];
-                                    newBlocks[index] = {
-                                      ...block,
-                                      content: {
-                                        ...block.content,
-                                        url: url || "",
-                                      },
-                                    };
-                                    setContentBlocks(newBlocks);
-                                    setHasUnsavedChanges(true);
-                                  }}
-                                />
-                              )}
-                            </>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => handleDeleteBlock(index)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  )}
-                </div>
-              )}
-
-              {block.type === "video" && (
-                <ResizableVideo
-                  src={block.content.url}
-                  title={block.content.title || "Video content"}
-                  initialWidth={block.content.size?.width || "100%"}
-                  initialHeight={block.content.size?.height || "auto"}
-                />
-              )}
-              {block.type === "audio" && (
-                <AudioPlayer
-                  src={block.content.url}
-                  title={block.content.title}
-                />
-              )}
-              {block.type === "image" && (
-                <ResizableImage
-                  src={block.content.url!}
-                  alt={block.content.title || "Content image"}
-                  initialWidth={block.content.size?.width}
-                  initialHeight={block.content.size?.height}
-                  editable={editorMode}
-                  onResize={
-                    editorMode
-                      ? (width, height) => {
-                          const newBlocks = [...contentBlocks];
-                          newBlocks[index] = {
-                            ...block,
-                            content: {
-                              ...block.content,
-                              size: {
-                                width: `${width}px`,
-                                height: height ? `${height}px` : "auto",
-                              },
-                            },
-                          };
-                          setContentBlocks(newBlocks);
-                          setHasUnsavedChanges(true);
-                        }
-                      : undefined
-                  }
-                />
-              )}
-              {block.type === "text" && (
-                <BlockNoteEditorComponent
-                  conceptId={conceptId}
-                  courseId={courseId}
-                  sectionId={concept?.sectionId || ""}
-                  initialContent={block.content.textContent}
-                  editorMode={editorMode}
-                  isTransparent={block.content.isTransparent}
-                  onChange={(content) => {
-                    const newBlocks = [...contentBlocks];
-                    newBlocks[index] = {
-                      ...block,
-                      content: { ...block.content, textContent: content },
-                    };
-                    setContentBlocks(newBlocks);
-                    setHasUnsavedChanges(true);
-                  }}
-                />
-              )}
-              {block.type === "embed" && (
-                <div className="w-full flex justify-center items-center">
-                  <div className="w-full max-w-[800px] mx-auto flex justify-center">
-                    <div
-                      className="~min-h-[200px]/[600px] w-full flex justify-center items-center"
-                      dangerouslySetInnerHTML={{ __html: block.content.html }}
-                    />
+                            ) : (
+                              <>
+                                <div className="space-y-2">
+                                  <Label>Title</Label>
+                                  <Input
+                                    value={block.content.title || ""}
+                                    onChange={(e) => {
+                                      const newBlocks = [...contentBlocks];
+                                      newBlocks[index] = {
+                                        ...block,
+                                        content: {
+                                          ...block.content,
+                                          title: e.target.value,
+                                        },
+                                      };
+                                      setContentBlocks(newBlocks);
+                                      setHasUnsavedChanges(true);
+                                    }}
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>URL</Label>
+                                  <Input
+                                    value={block.content.url || ""}
+                                    onChange={(e) => {
+                                      const newBlocks = [...contentBlocks];
+                                      newBlocks[index] = {
+                                        ...block,
+                                        content: {
+                                          ...block.content,
+                                          url: e.target.value,
+                                        },
+                                      };
+                                      setContentBlocks(newBlocks);
+                                      setHasUnsavedChanges(true);
+                                    }}
+                                  />
+                                </div>
+                                {block.type === "image" && (
+                                  <ImageUpload
+                                    value={block.content.url || ""}
+                                    onChange={(url) => {
+                                      const newBlocks = [...contentBlocks];
+                                      newBlocks[index] = {
+                                        ...block,
+                                        content: {
+                                          ...block.content,
+                                          url: url || "",
+                                        },
+                                      };
+                                      setContentBlocks(newBlocks);
+                                      setHasUnsavedChanges(true);
+                                    }}
+                                  />
+                                )}
+                              </>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => handleDeleteBlock(index)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    )}
                   </div>
-                </div>
-              )}
-            </div>
-          ))}
+                )}
+
+                {block.type === "video" && (
+                  <ResizableVideo
+                    src={block.content.url}
+                    title={block.content.title || "Video content"}
+                    initialWidth={block.content.size?.width || "100%"}
+                    initialHeight={block.content.size?.height || "auto"}
+                  />
+                )}
+                {block.type === "audio" && (
+                  <AudioPlayer
+                    src={block.content.url}
+                    title={block.content.title}
+                  />
+                )}
+                {block.type === "image" && (
+                  <ResizableImage
+                    src={block.content.url!}
+                    alt={block.content.title || "Content image"}
+                    initialWidth={block.content.size?.width}
+                    initialHeight={block.content.size?.height}
+                    editable={editorMode}
+                    onResize={
+                      editorMode
+                        ? (width, height) => {
+                            const newBlocks = [...contentBlocks];
+                            newBlocks[index] = {
+                              ...block,
+                              content: {
+                                ...block.content,
+                                size: {
+                                  width: `${width}px`,
+                                  height: height ? `${height}px` : "auto",
+                                },
+                              },
+                            };
+                            setContentBlocks(newBlocks);
+                            setHasUnsavedChanges(true);
+                          }
+                        : undefined
+                    }
+                  />
+                )}
+                {block.type === "text" && (
+                  <BlockNoteEditorComponent
+                    conceptId={conceptId}
+                    courseId={courseId}
+                    sectionId={concept?.sectionId || ""}
+                    initialContent={block.content.textContent}
+                    editorMode={editorMode}
+                    isTransparent={block.content.isTransparent}
+                    onChange={(content) => {
+                      const newBlocks = [...contentBlocks];
+                      newBlocks[index] = {
+                        ...block,
+                        content: { ...block.content, textContent: content },
+                      };
+                      setContentBlocks(newBlocks);
+                      setHasUnsavedChanges(true);
+                    }}
+                  />
+                )}
+                {block.type === "embed" && (
+                  <div className="w-full flex justify-center items-center">
+                    <div className="w-full max-w-[800px] mx-auto flex justify-center">
+                      <div
+                        className="~min-h-[200px]/[600px] w-full flex justify-center items-center"
+                        dangerouslySetInnerHTML={{ __html: block.content.html }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
         </div>
       )}
 
@@ -631,7 +641,10 @@ export function ConceptContent({
                   placeholder="Enter video URL..."
                 />
                 {videoUrl && (
-                  <CustomVideoPlayer src={videoUrl} title="Video Preview" />
+                  <CustomVideoPlayer
+                    url={videoUrl}
+                    thumbnailUrl=""
+                  />
                 )}
                 <Button onClick={handleAddVideo}>Add Video</Button>
               </div>

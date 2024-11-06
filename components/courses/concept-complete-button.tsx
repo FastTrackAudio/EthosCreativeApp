@@ -6,18 +6,18 @@ import { useTransition } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import axios from "axios"
 import { toast } from "sonner"
-import { useRouter } from "next/navigation"
 
 interface ConceptCompleteButtonProps {
   conceptId: string
   courseId: string
+  onComplete: (isCompleting: boolean) => void
 }
 
 export function ConceptCompleteButton({
   conceptId,
   courseId,
+  onComplete,
 }: ConceptCompleteButtonProps) {
-  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const queryClient = useQueryClient()
 
@@ -33,27 +33,33 @@ export function ConceptCompleteButton({
   // Mutation to update completion status
   const completeMutation = useMutation({
     mutationFn: async () => {
-      await axios.post(`/api/concepts/${conceptId}/complete`)
+      await axios.post(`/api/concepts/${conceptId}/toggle-complete`)
     },
-    onSuccess: () => {
-      toast.success("Concept marked as complete")
+    onSuccess: (_, variables) => {
+      const isCompleting = !completionStatus?.completed
+      toast.success(isCompleting ? "Concept marked as complete" : "Concept marked as incomplete")
       queryClient.invalidateQueries({
         queryKey: ["concept-completion", conceptId],
       })
-      // Navigate back to course page after successful completion
-      router.push(`/dashboard/my-courses/${courseId}`)
+      onComplete(isCompleting)
     },
     onError: () => {
-      toast.error("Failed to mark concept as complete")
+      toast.error("Failed to update completion status")
     },
   })
 
   if (completionStatus?.completed) {
     return (
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <Button
+        onClick={() => completeMutation.mutate()}
+        size="sm"
+        variant="outline"
+        className="gap-2"
+        disabled={isPending || completeMutation.isPending}
+      >
         <CheckCircle className="h-4 w-4 text-green-500" />
         Completed
-      </div>
+      </Button>
     )
   }
 
@@ -66,9 +72,7 @@ export function ConceptCompleteButton({
       disabled={isPending || completeMutation.isPending}
     >
       <CheckCircle className="h-4 w-4" />
-      {completeMutation.isPending
-        ? "Marking as Complete..."
-        : "Mark as Complete"}
+      {completeMutation.isPending ? "Marking as Complete..." : "Mark as Complete"}
     </Button>
   )
 }

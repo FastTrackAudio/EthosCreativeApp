@@ -2,12 +2,15 @@
 
 import { motion } from "framer-motion";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { CustomVideoPlayer } from "@/features/video-player/VideoPlayer";
 import { ConceptContent } from "@/components/courses/concept-content";
 import { ConceptListItem } from "@/components/courses/concept-list-item";
+import { ConceptCompleteButton } from "@/components/courses/concept-complete-button";
+import { toast } from "sonner";
 
 interface ConceptViewerProps {
   courseId: string;
@@ -15,6 +18,9 @@ interface ConceptViewerProps {
 }
 
 export function ConceptViewer({ courseId, conceptId }: ConceptViewerProps) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
   // Fetch course data
   const { data: course } = useQuery({
     queryKey: ["course", courseId],
@@ -55,19 +61,90 @@ export function ConceptViewer({ courseId, conceptId }: ConceptViewerProps) {
     },
   });
 
-  // Find the first video block in the content
-  const firstVideoBlock = currentConcept?.content?.blocks?.find(
-    (block: any) => block.type === "video"
-  );
+  // Parse and find the first video block
+  const getFirstVideoBlock = (concept: any) => {
+    if (!concept?.content) return null;
+    
+    let content;
+    try {
+      // If content is a string, parse it
+      content = typeof concept.content === 'string' 
+        ? JSON.parse(concept.content) 
+        : concept.content;
+      
+      // Find first video block
+      const videoBlock = content.blocks?.find(
+        (block: any) => block.type === "video" && block.content?.url
+      );
+      
+      return videoBlock;
+    } catch (error) {
+      console.error("Error parsing concept content:", error);
+      return null;
+    }
+  };
+
+  const firstVideoBlock = currentConcept ? getFirstVideoBlock(currentConcept) : null;
+  console.log("First video block:", firstVideoBlock); // Debug log
+
+  // Function to find next concept
+  const findNextConcept = () => {
+    if (!concepts) return null;
+    const currentIndex = concepts.findIndex(c => c.id === conceptId);
+    if (currentIndex === -1 || currentIndex === concepts.length - 1) return null;
+    return concepts[currentIndex + 1];
+  };
+
+  const nextConcept = findNextConcept();
+
+  const handleComplete = (isCompleting: boolean) => {
+    // Only navigate if we're marking as complete
+    if (isCompleting && nextConcept) {
+      router.push(`/dashboard/my-courses/${courseId}/concepts/${nextConcept.id}`);
+    }
+    // Otherwise just stay on the current page
+  };
+
+  const handleToggleComplete = async (conceptId: string) => {
+    try {
+      const response = await axios.post(`/api/concepts/${conceptId}/toggle-complete`);
+      if (response.data.completed) {
+        toast("Concept marked as complete", {
+          description: "Your progress has been updated",
+        });
+      } else {
+        toast("Concept marked as incomplete", {
+          description: "Your progress has been updated",
+        });
+      }
+      queryClient.invalidateQueries({
+        queryKey: ["concepts", courseId],
+      });
+    } catch (error) {
+      toast("Failed to update completion status", {
+        description: "Please try again",
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="container mx-auto grid lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          <h1 className="text-3xl font-bold">{course?.title}</h1>
+          <div className="flex justify-between items-center">
+            <h1 className="text-3xl font-bold">
+              {currentConcept?.title}
+            </h1>
+            <ConceptCompleteButton
+              conceptId={conceptId}
+              courseId={courseId}
+              onComplete={handleComplete}
+            />
+          </div>
 
-          {firstVideoBlock && (
+          {/* Video Player */}
+          {firstVideoBlock?.content?.url && (
             <div className="relative aspect-video bg-black rounded-lg overflow-hidden shadow-lg">
               <CustomVideoPlayer
                 url={firstVideoBlock.content.url}
@@ -82,6 +159,15 @@ export function ConceptViewer({ courseId, conceptId }: ConceptViewerProps) {
             courseId={courseId}
             editorMode={false}
           />
+
+          {/* Bottom Complete Button */}
+          <div className="flex justify-center pt-8 pb-4">
+            <ConceptCompleteButton
+              conceptId={conceptId}
+              courseId={courseId}
+              onComplete={handleComplete}
+            />
+          </div>
         </div>
 
         {/* Sidebar */}
@@ -94,6 +180,10 @@ export function ConceptViewer({ courseId, conceptId }: ConceptViewerProps) {
                   (s) => s.id === concept.sectionId
                 );
 
+                const isCompleted = concept.completions?.some(
+                  (completion) => completion.completed
+                );
+
                 return (
                   <Link
                     key={concept.id}
@@ -101,12 +191,16 @@ export function ConceptViewer({ courseId, conceptId }: ConceptViewerProps) {
                   >
                     <ConceptListItem
                       title={concept.title}
-                      description={concept.description || undefined}
+                      shortTitle={concept.shortTitle}
+                      description={concept.description}
+                      shortDescription={concept.shortDescription}
                       thumbnailUrl={concept.thumbnailUrl}
                       sectionTitle={section?.title || ""}
                       isActive={concept.id === conceptId}
+                      isCompleted={isCompleted}
                       index={index}
                       onClick={() => {}}
+                      onToggleComplete={() => handleToggleComplete(concept.id)}
                     />
                   </Link>
                 );
