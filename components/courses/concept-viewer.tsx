@@ -67,16 +67,19 @@ export function ConceptViewer({ courseId, conceptId }: ConceptViewerProps) {
     
     let content;
     try {
-      // If content is a string, parse it
       content = typeof concept.content === 'string' 
         ? JSON.parse(concept.content) 
         : concept.content;
       
-      // Find first video block
-      const videoBlock = content.blocks?.find(
+      // Find first video block and remove it from content
+      const videoBlockIndex = content.blocks?.findIndex(
         (block: any) => block.type === "video" && block.content?.url
       );
       
+      if (videoBlockIndex === -1) return null;
+      
+      // Get the video block but don't modify the original content
+      const videoBlock = content.blocks[videoBlockIndex];
       return videoBlock;
     } catch (error) {
       console.error("Error parsing concept content:", error);
@@ -143,9 +146,9 @@ export function ConceptViewer({ courseId, conceptId }: ConceptViewerProps) {
             />
           </div>
 
-          {/* Video Player */}
+          {/* Video Player - Only show if there's a video block */}
           {firstVideoBlock?.content?.url && (
-            <div className="relative aspect-video bg-black rounded-lg overflow-hidden shadow-lg">
+            <div className="relative aspect-video bg-black rounded-lg overflow-hidden shadow-lg mb-8">
               <CustomVideoPlayer
                 url={firstVideoBlock.content.url}
                 thumbnailUrl={firstVideoBlock.content.thumbnailUrl}
@@ -153,11 +156,12 @@ export function ConceptViewer({ courseId, conceptId }: ConceptViewerProps) {
             </div>
           )}
 
-          {/* Render ConceptContent */}
+          {/* Render ConceptContent without the first video */}
           <ConceptContent
             conceptId={conceptId}
             courseId={courseId}
             editorMode={false}
+            skipFirstVideo={true}
           />
 
           {/* Bottom Complete Button */}

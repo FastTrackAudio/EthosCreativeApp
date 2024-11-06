@@ -12,7 +12,7 @@ interface FileUploadButtonProps {
 
 export function FileUploadButton({ onUploadComplete }: FileUploadButtonProps) {
   const [isUploading, setIsUploading] = useState(false);
-  const { startUpload } = useUploadThing("imageUploader");
+  const { startUpload } = useUploadThing("fileUploader");
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0]) return;
@@ -45,7 +45,7 @@ export function FileUploadButton({ onUploadComplete }: FileUploadButtonProps) {
         type="file"
         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
         onChange={handleFileChange}
-        accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.jpg,.jpeg,.png,.gif,.mp3,.mp4,.wav"
+        accept=".pdf,.jpg,.jpeg,.png,.gif,.mp3,.mp4,.wav,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv"
       />
       <FileUp className="h-5 w-5" />
       {isUploading ? "Uploading..." : "Add File"}

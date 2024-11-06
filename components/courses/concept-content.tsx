@@ -49,12 +49,14 @@ interface ConceptContentProps {
   conceptId: string;
   courseId: string;
   editorMode?: boolean;
+  skipFirstVideo?: boolean;
 }
 
 export function ConceptContent({
   conceptId,
   courseId,
   editorMode = false,
+  skipFirstVideo = false,
 }: ConceptContentProps) {
   const queryClient = useQueryClient();
   const [contentBlocks, setContentBlocks] = useState<any[]>([]);
@@ -469,44 +471,71 @@ export function ConceptContent({
         );
       }
       case "file": {
-        // Handle PDFs
-        if (block.content.fileType === 'application/pdf') {
-          return (
-            <PDFViewer 
-              url={block.content.url} 
-              fileName={block.content.fileName} 
-            />
-          );
-        }
+        const blockIndex = contentBlocks.findIndex(b => b.id === block.id);
         
-        // Handle images
-        if (block.content.isImage) {
-          return (
-            <ResizableImage
-              src={block.content.url}
-              alt={block.content.fileName}
-              editable={editorMode}
-              // ... other props
-            />
-          );
-        }
-        
-        // Handle other file types with download button
         return (
-          <div className="flex items-center gap-2 p-4 border rounded-lg">
-            <FileIcon className="h-5 w-5" />
-            <span className="flex-1">{block.content.fileName}</span>
-            <Button variant="outline" size="sm" asChild>
-              <a 
-                href={block.content.url} 
-                download 
-                target="_blank" 
-                rel="noopener noreferrer"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Download
-              </a>
-            </Button>
+          <div className="relative group">
+            {editorMode && (
+              <div className="absolute right-2 top-2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => handleDeleteBlock(blockIndex)}
+                  title="Delete File"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            
+            {block.content.fileType === 'application/pdf' ? (
+              <PDFViewer 
+                url={block.content.url} 
+                fileName={block.content.fileName} 
+              />
+            ) : block.content.isImage ? (
+              <ResizableImage
+                src={block.content.url}
+                alt={block.content.fileName}
+                editable={editorMode}
+                onResize={
+                  editorMode
+                    ? (width, height) => {
+                        const newBlocks = [...contentBlocks];
+                        newBlocks[blockIndex] = {
+                          ...block,
+                          content: {
+                            ...block.content,
+                            size: {
+                              width: `${width}px`,
+                              height: `${height}px`,
+                            },
+                          },
+                        };
+                        setContentBlocks(newBlocks);
+                        setHasUnsavedChanges(true);
+                      }
+                    : undefined
+                }
+              />
+            ) : (
+              <div className="flex items-center gap-2 p-4 border rounded-lg">
+                <FileIcon className="h-5 w-5" />
+                <span className="flex-1">{block.content.fileName}</span>
+                <Button variant="outline" size="sm" asChild>
+                  <a 
+                    href={block.content.url} 
+                    download 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </a>
+                </Button>
+              </div>
+            )}
           </div>
         );
       }
@@ -547,7 +576,7 @@ export function ConceptContent({
       ) : (
         <div className="space-y-8">
           {/* First video block - only show in editor mode */}
-          {editorMode && (
+          {editorMode && !skipFirstVideo && (
             <>
               {contentBlocks
                 .filter(block => block.type === "video")
@@ -563,8 +592,13 @@ export function ConceptContent({
           {/* Rest of the content blocks */}
           {contentBlocks
             .filter((block, index) => {
-              // In editor mode, skip the first video as it's already shown above
-              // In viewer mode, show all blocks
+              // Skip first video in viewer mode if skipFirstVideo is true
+              if (block.type === "video" && 
+                  contentBlocks.findIndex(b => b.type === "video") === index &&
+                  skipFirstVideo) {
+                return false;
+              }
+              // Skip first video in editor mode if already shown above
               if (editorMode && block.type === "video" && 
                   contentBlocks.findIndex(b => b.type === "video") === index) {
                 return false;
