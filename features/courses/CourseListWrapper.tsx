@@ -61,11 +61,17 @@ import {
   CourseCardTitle,
   CourseCardDescription,
 } from "@/components/ui/course-card";
+import { ImageUpload } from "@/components/ui/image-upload";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 interface ExtendedCourse {
   id: string;
   title: string;
   description: string | null;
+  imageUrl?: string | null;
   userId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -86,6 +92,106 @@ interface CourseListWrapperProps {
   initialCourses?: ExtendedCourse[];
 }
 
+interface EditCourseDialogProps {
+  course: ExtendedCourse;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+function EditCourseDialog({ course, open, onOpenChange }: EditCourseDialogProps) {
+  const [title, setTitle] = React.useState(course.title);
+  const [description, setDescription] = React.useState(course.description || "");
+  const [imageUrl, setImageUrl] = React.useState(course.imageUrl || "");
+  const queryClient = useQueryClient();
+
+  const updateCourseMutation = useMutation({
+    mutationFn: async (data: {
+      title: string;
+      description: string | null;
+      imageUrl: string | null;
+    }) => {
+      const response = await axios.patch(`/api/courses/${course.id}`, data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+      toast.success("Course updated successfully");
+      onOpenChange(false);
+    },
+    onError: () => {
+      toast.error("Failed to update course");
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateCourseMutation.mutate({
+      title,
+      description,
+      imageUrl,
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit Course</DialogTitle>
+          <DialogDescription>
+            Make changes to your course here.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">Title</Label>
+            <Input
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Course title"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Course description"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Course Image</Label>
+            <ImageUpload
+              value={imageUrl}
+              onChange={setImageUrl}
+              onRemove={() => setImageUrl("")}
+            />
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={updateCourseMutation.isPending}
+            >
+              {updateCourseMutation.isPending ? "Saving..." : "Save changes"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function CourseListWrapper({
   userId,
   isAdmin,
@@ -95,6 +201,7 @@ export function CourseListWrapper({
   const pathname = usePathname();
   const [isOpen, setIsOpen] = React.useState(false);
   const isAdminView = pathname.includes("/admin/manage-courses");
+  const [editingCourse, setEditingCourse] = React.useState<ExtendedCourse | null>(null);
 
   const { data: courses = initialCourses, isLoading } = useQuery<
     ExtendedCourse[]
@@ -167,13 +274,8 @@ export function CourseListWrapper({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-[200px]">
-                      <DropdownMenuItem>
-                        <Link
-                          href={`/dashboard/admin/manage-courses/${course.id}/edit`}
-                          className="flex items-center w-full"
-                        >
-                          Edit Course
-                        </Link>
+                      <DropdownMenuItem onClick={() => setEditingCourse(course)}>
+                        Edit Course
                       </DropdownMenuItem>
                       <DropdownMenuItem>
                         <Link
@@ -285,6 +387,16 @@ export function CourseListWrapper({
           </div>
         ))}
       </div>
+
+      {editingCourse && (
+        <EditCourseDialog
+          course={editingCourse}
+          open={!!editingCourse}
+          onOpenChange={(open) => {
+            if (!open) setEditingCourse(null);
+          }}
+        />
+      )}
     </div>
   );
 }
