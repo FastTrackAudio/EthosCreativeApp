@@ -303,46 +303,45 @@ export function ConceptContent({
 
   // Generic script injection handler
   useEffect(() => {
-    const injectedScripts: HTMLScriptElement[] = []; // Keep track of scripts we inject
     const embedBlocks = contentBlocks.filter((block) => block.type === "embed");
+    const embedContainers = new Map(); // Track containers by block ID
 
     if (embedBlocks.length > 0) {
       embedBlocks.forEach((block) => {
-        const scriptMatches = block.content.html.match(
-          /<script[^>]*>([\s\S]*?)<\/script>/gi
-        );
+        // Create a unique container for each embed
+        const containerId = `embed-container-${block.id}`;
+        const container = document.getElementById(containerId);
+        
+        if (container && !embedContainers.has(block.id)) {
+          container.innerHTML = block.content.html;
+          embedContainers.set(block.id, true);
 
-        if (scriptMatches) {
-          scriptMatches.forEach((scriptTag: string) => {
-            const script = document.createElement("script");
-            const srcMatch = scriptTag.match(/src=["'](.*?)["']/);
+          // Handle scripts separately
+          const scriptMatches = block.content.html.match(
+            /<script[^>]*>([\s\S]*?)<\/script>/gi
+          );
 
-            if (srcMatch) {
-              script.src = srcMatch[1];
-            }
+          if (scriptMatches) {
+            scriptMatches.forEach((scriptTag: string) => {
+              const script = document.createElement("script");
+              const srcMatch = scriptTag.match(/src=["'](.*?)["']/);
 
-            const content = scriptTag.replace(/<script[^>]*>|<\/script>/gi, "");
-            if (content.trim()) {
-              script.textContent = content;
-            }
+              if (srcMatch) {
+                script.src = srcMatch[1];
+              } else {
+                const content = scriptTag.replace(/<script[^>]*>|<\/script>/gi, "");
+                script.textContent = content;
+              }
 
-            script.async = true;
-            document.body.appendChild(script);
-            injectedScripts.push(script); // Track the script
-          });
+              script.async = true;
+              container.appendChild(script);
+            });
+          }
         }
       });
-
-      // Cleanup function
-      return () => {
-        // Only remove scripts we injected
-        injectedScripts.forEach((script) => {
-          if (script.parentNode) {
-            script.parentNode.removeChild(script);
-          }
-        });
-      };
     }
+
+    // No cleanup needed as we're managing containers individually
   }, [contentBlocks]);
 
   // Add edit functionality for embeds
@@ -459,11 +458,11 @@ export function ConceptContent({
       }
       case "embed": {
         return (
-          <div className="w-full flex justify-center items-center">
-            <div className="w-full max-w-[800px] mx-auto flex justify-center">
+          <div className="w-full flex justify-center">
+            <div className="w-full max-w-[800px] mx-auto">
               <div
-                className="~min-h-[200px]/[600px] w-full flex justify-center items-center"
-                dangerouslySetInnerHTML={{ __html: block.content.html }}
+                id={`embed-container-${block.id}`}
+                className="min-h-[200px] w-full flex justify-center items-center"
               />
             </div>
           </div>
