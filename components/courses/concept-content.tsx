@@ -44,6 +44,7 @@ import { FileUploadButton } from "@/components/ui/file-upload-button";
 import { PDFViewer } from "@/components/ui/pdf-viewer";
 import { FileIcon } from "lucide-react";
 import { Download } from "lucide-react";
+import { useUploadThing } from "@/lib/uploadthing";
 
 interface ConceptContentProps {
   conceptId: string;

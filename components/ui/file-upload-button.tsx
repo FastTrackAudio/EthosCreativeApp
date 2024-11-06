@@ -12,7 +12,7 @@ interface FileUploadButtonProps {
 
 export function FileUploadButton({ onUploadComplete }: FileUploadButtonProps) {
   const [isUploading, setIsUploading] = useState(false);
-  const { startUpload } = useUploadThing("fileUploader");
+  const { startUpload } = useUploadThing("imageUploader");
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0]) return;

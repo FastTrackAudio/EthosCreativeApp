@@ -5,18 +5,7 @@ import { UploadThingError } from "uploadthing/server";
 const f = createUploadthing();
 
 export const ourFileRouter = {
-  imageUploader: f({ image: { maxFileSize: "4MB" } })
-    .middleware(async () => {
-      const { getUser } = getKindeServerSession();
-      const user = await getUser();
-      if (!user || !user.id) throw new UploadThingError("Unauthorized");
-      return { userId: user.id };
-    })
-    .onUploadComplete(async ({ metadata, file }) => {
-      return { uploadedBy: metadata.userId, url: file.url };
-    }),
-
-  fileUploader: f({
+  imageUploader: f({
     pdf: { maxFileSize: "32MB" },
     image: { maxFileSize: "8MB" },
     text: { maxFileSize: "8MB" },
