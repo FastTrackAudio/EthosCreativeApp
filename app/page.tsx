@@ -7,7 +7,7 @@ export default function Home() {
     <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-8 sm:gap-20 p-4 sm:p-8 pb-16 sm:pb-32">
       <div className="w-full max-w-[100vw] sm:max-w-[80vw] md:max-w-[70vw] px-4 py-4 sm:py-8">
         <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold text-center bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent leading-tight sm:leading-none pb-6 sm:pb-12 tracking-tight">
-          Songmaking.com
+          SongMaking.com
         </h1>
       </div>
 
